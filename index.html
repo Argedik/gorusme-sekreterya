@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Görüşme — Başkan &amp; Sekreterya</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤝</text></svg>">
+</head>
+<body>
+
+  <!-- Bağlantı durumu (sağ üst köşe) -->
+  <div id="baglantiDurumu" class="baglanti" title="Sunucu bağlantısı">
+    <span class="nokta"></span><span class="metin">bağlanıyor…</span>
+  </div>
+
+  <!-- ============================================================ -->
+  <!--  1) GİRİŞ EKRANI                                             -->
+  <!-- ============================================================ -->
+  <main id="ekranGiris" class="ekran">
+    <div class="giris-kutu">
+      <h1 class="giris-baslik">Görüşme</h1>
+      <p class="giris-alt">Kim olarak devam etmek istiyorsunuz?</p>
+
+      <div class="giris-butonlar">
+        <a class="rol-btn rol-baskan" href="#/baskan">
+          <span class="rol-ikon">👔</span>
+          <span class="rol-ad">Başkan</span>
+          <span class="rol-aciklama">Görüşme durumunu yönet</span>
+        </a>
+        <a class="rol-btn rol-sekreterya" href="#/sekreterya">
+          <span class="rol-ikon">🗂️</span>
+          <span class="rol-ad">Sekreterya</span>
+          <span class="rol-aciklama">Sırayı ve listeyi yönet</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================ -->
+  <!--  2) BAŞKAN EKRANI                                            -->
+  <!-- ============================================================ -->
+  <main id="ekranBaskan" class="ekran">
+    <header class="ust-bar">
+      <a class="geri-btn" href="#/" title="Giriş ekranına dön">←</a>
+      <h2 class="ust-baslik">Başkan</h2>
+      <button type="button" id="ayarlarBtn" class="ikon-btn" title="Ayarlar">⚙️</button>
+    </header>
+
+    <section class="baskan-govde">
+
+      <!-- Şu an görüşülen kişi + 10 dakikalık geri sayım -->
+      <div id="aktifKisiKart" class="aktif-kart">
+        <div class="aktif-etiket">Şu an görüşülen</div>
+        <div id="aktifKisiAd" class="aktif-ad">—</div>
+        <div id="aktifSure" class="aktif-sure">10:00</div>
+        <div id="aktifSureEtiket" class="aktif-sure-etiket">kalan süre</div>
+      </div>
+
+      <!-- Üç durum butonu -->
+      <div class="durum-butonlar">
+        <button class="durum-btn yesil" data-durum="gorusmede">
+          <span class="durum-ad">Görüşmede</span>
+          <span class="durum-aciklama">Şu an görüşülüyor</span>
+        </button>
+        <button class="durum-btn sari" data-durum="beklemede">
+          <span class="durum-ad">Beklemede</span>
+          <span id="beklemedeAciklama" class="durum-aciklama">Kişi çıktı, başkan notlarını alıyor</span>
+        </button>
+        <button class="durum-btn kirmizi" data-durum="bitti">
+          <span class="durum-ad">Bitti</span>
+          <span class="durum-aciklama">Görüşme bitti</span>
+        </button>
+      </div>
+
+      <!-- Sıradaki gelebilir -->
+      <button id="siradakiBtn" class="siradaki-btn" disabled>
+        <span class="siradaki-ad">Sıradaki kişi gelebilir</span>
+        <span id="siradakiKimText" class="siradaki-kim">— görüşme bitince aktifleşir</span>
+      </button>
+
+      <!-- Sekreterya listesi — her zaman açık, salt okunur (görüşmede + bekleyenler) -->
+      <div class="okuma-kart">
+        <div class="okuma-baslik">📋 Sekreterya listesi</div>
+        <div class="okuma-icerik">
+          <table class="tablo tablo-okuma">
+            <thead>
+              <tr><th>Ad</th><th>Soyad</th><th>Saat</th><th>Durum</th><th>Not</th></tr>
+            </thead>
+            <tbody id="okumaGovde"></tbody>
+          </table>
+          <p id="okumaBos" class="tablo-bos">Liste boş.</p>
+        </div>
+      </div>
+
+      <!-- Bitti görüşmeler — ayrı, katlanır bir buton; salt okunur -->
+      <div class="okuma-kart bitti-sarmal">
+        <button type="button" id="okumaBittiToggle" class="bitti-baslik-btn" aria-expanded="false">
+          <span class="bitti-renk"></span>
+          <span class="bitti-baslik-metin">Biten görüşmeler</span>
+          <span id="okumaBittiSayac" class="sayac-rozet">0</span>
+          <span class="bitti-ok">▾</span>
+        </button>
+        <div id="okumaBittiKapsayici" class="bitti-kapsayici" hidden>
+          <table class="tablo tablo-okuma tablo-okuma-bitti">
+            <thead>
+              <tr><th>Ad</th><th>Soyad</th><th>Saat</th><th>Not</th></tr>
+            </thead>
+            <tbody id="okumaBittiGovde"></tbody>
+          </table>
+          <p id="okumaBittiBos" class="tablo-bos" hidden>Henüz biten görüşme yok.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Ayarlar popup: sağ üstteki ⚙️ ikonuyla açılır -->
+    <div id="ayarlarModal" class="modal-ortu" hidden>
+      <div class="modal-kutu">
+        <div class="modal-baslik">
+          <span>⚙️ Ayarlar</span>
+          <button type="button" id="ayarlarKapatBtn" class="modal-kapat" aria-label="Kapat">✕</button>
+        </div>
+        <div class="ayar-icerik">
+          <label class="ayar-satir">
+            <input type="checkbox" id="sureBildirimToggle">
+            <span>
+              <strong>Süre doldu bildirimi</strong>
+              <small>10 dakika dolunca bu cihazda ses + titreşim + bildirim</small>
+            </span>
+          </label>
+          <p id="sureBildirimNot" class="ayar-not" hidden>🔕 Tarayıcı bildirimleri engellenmiş; ses ve titreşim yine de çalışır.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================ -->
+  <!--  3) SEKRETERYA EKRANI                                        -->
+  <!-- ============================================================ -->
+  <main id="ekranSekreterya" class="ekran">
+    <header class="ust-bar">
+      <a class="geri-btn" href="#/" title="Giriş ekranına dön">←</a>
+      <h2 class="ust-baslik">Sekreterya</h2>
+      <div id="baskanRozet" class="rozet" title="Başkanın anlık durumu">
+        <span class="rozet-nokta"></span><span class="rozet-metin">—</span>
+      </div>
+    </header>
+
+    <section class="sekreterya-govde">
+
+      <!-- Bildirim izni: başkan "sıradaki gelebilir" deyince telefona bildirim düşsün -->
+      <div id="bildirimBanner" class="bildirim-banner" hidden>
+        <span class="bildirim-metin">🔔 "Sıradaki kişi gelebilir" olduğunda bu cihaza bildirim gitmesi için izin verin.</span>
+        <button type="button" id="bildirimIzinBtn" class="bildirim-izin-btn">İzin ver</button>
+      </div>
+
+      <!-- Üst kısım: Görüşmede + Sıradaki (bekleme). Bitti aşağıda ayrı bölümde. -->
+      <div class="kutular">
+        <div class="kutu kutu-gorusmede" data-kutu="gorusmede">
+          <div class="kutu-baslik"><span class="kutu-renk"></span>Görüşmede</div>
+          <div class="kutu-icerik" data-drop="gorusmede">
+            <p class="kutu-bos">Kişiyi buraya sürükleyin</p>
+          </div>
+        </div>
+        <div class="kutu kutu-siradaki" data-kutu="siradaki">
+          <div class="kutu-baslik"><span class="kutu-renk"></span>Sıradaki (Beklemede)</div>
+          <div class="kutu-icerik" data-drop="siradaki">
+            <p class="kutu-bos">Kişiyi buraya sürükleyin</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kişi ekleme formu -->
+      <form id="ekleForm" class="ekle-form" autocomplete="off">
+        <input type="text" name="ad" placeholder="Ad" required>
+        <input type="text" name="soyad" placeholder="Soyad">
+        <input type="time" name="saat" step="600">
+        <input type="text" name="not" placeholder="Not">
+        <button type="submit" class="ekle-btn">+ Ekle</button>
+      </form>
+
+      <!-- Liste tablosu: görüşmede → sıradaki/bekleyen (bitti aşağıda ayrı butonda) -->
+      <div class="tablo-sarmal" data-drop="liste">
+        <table class="tablo">
+          <thead>
+            <tr>
+              <th class="s-tut"></th>
+              <th>Ad</th>
+              <th>Soyad</th>
+              <th>Saat</th>
+              <th>Not</th>
+              <th class="s-islem">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="tabloGovde"></tbody>
+        </table>
+        <p id="tabloBos" class="tablo-bos">Henüz kimse eklenmedi. Yukarıdaki formdan kişi ekleyin.</p>
+      </div>
+
+      <!-- Bitti görüşmeler — ayrı, katlanır bir buton; kişiyi buraya da sürükleyebilirsiniz -->
+      <div class="tablo-sarmal bitti-sarmal" data-drop="bitti">
+        <button type="button" id="bittiToggle" class="bitti-baslik-btn" aria-expanded="false">
+          <span class="bitti-renk"></span>
+          <span class="bitti-baslik-metin">Biten görüşmeler</span>
+          <span id="bittiSayac" class="sayac-rozet">0</span>
+          <span class="bitti-ok">▾</span>
+        </button>
+        <div id="bittiKapsayici" class="bitti-kapsayici" hidden>
+          <table class="tablo">
+            <thead>
+              <tr>
+                <th class="s-tut"></th>
+                <th>Ad</th>
+                <th>Soyad</th>
+                <th>Saat</th>
+                <th>Not</th>
+                <th class="s-islem">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="bittiGovde"></tbody>
+          </table>
+          <p id="bittiBos" class="tablo-bos" hidden>Henüz biten görüşme yok.</p>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gorusme",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["dev-server.mjs"],
+      "port": 8000,
+      "autoPort": true
+    }
+  ]
+}

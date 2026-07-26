@@ -1,0 +1,526 @@
+/* ============================================================
+   Görüşme — Başkan & Sekreterya
+   Sade, okunaklı, telefon + masaüstü uyumlu.
+   ============================================================ */
+
+:root {
+  --yesil:      #16a34a;
+  --yesil-koyu: #15803d;
+  --sari:       #eab308;
+  --sari-koyu:  #ca8a04;
+  --kirmizi:    #dc2626;
+  --kirmizi-koyu:#b91c1c;
+
+  --zemin:      #f1f5f9;
+  --kart:       #ffffff;
+  --kenar:      #e2e8f0;
+  --yazi:       #0f172a;
+  --yazi-soluk: #64748b;
+  --lacivert:   #1e293b;
+  --mavi:       #2563eb;
+
+  --r:      14px;
+  --golge:  0 1px 3px rgba(15,23,42,.08), 0 8px 24px rgba(15,23,42,.06);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--zemin);
+  color: var(--yazi);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input { font-family: inherit; font-size: 1rem; }
+button { cursor: pointer; }
+
+/* Ekranlar — sadece aktif olan görünür */
+.ekran { display: none; }
+.ekran.aktif { display: block; }
+
+/* ------------------------------------------------------------
+   Bağlantı durumu (sağ üst)
+   ------------------------------------------------------------ */
+.baglanti {
+  position: fixed; bottom: 10px; right: 12px; z-index: 60;
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--kenar);
+  font-size: .74rem; color: var(--yazi-soluk);
+  backdrop-filter: blur(6px);
+}
+.baglanti .nokta {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--sari); flex: none;
+}
+.baglanti.bagli   .nokta { background: var(--yesil); }
+.baglanti.kopuk   .nokta { background: var(--kirmizi); }
+.baglanti.yerel   .nokta { background: var(--mavi); }
+
+/* ------------------------------------------------------------
+   1) GİRİŞ EKRANI
+   ------------------------------------------------------------ */
+#ekranGiris.aktif {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+}
+.giris-kutu { width: 100%; max-width: 760px; text-align: center; }
+.giris-baslik {
+  margin: 0 0 6px; font-size: clamp(2rem, 7vw, 3rem);
+  color: #fff; letter-spacing: -.5px;
+}
+.giris-alt { margin: 0 0 32px; color: #94a3b8; font-size: 1rem; }
+
+.giris-butonlar {
+  display: grid; gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.rol-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 34px 22px; border-radius: 20px;
+  background: var(--kart); text-decoration: none; color: var(--yazi);
+  border: 2px solid transparent; box-shadow: var(--golge);
+  transition: transform .14s ease, border-color .14s ease;
+}
+.rol-btn:hover { transform: translateY(-3px); }
+.rol-btn:active { transform: translateY(0); }
+.rol-baskan:hover     { border-color: var(--mavi); }
+.rol-sekreterya:hover { border-color: var(--yesil); }
+.rol-ikon { font-size: 2.6rem; line-height: 1; }
+.rol-ad { font-size: 1.4rem; font-weight: 700; }
+.rol-aciklama { font-size: .86rem; color: var(--yazi-soluk); }
+
+/* ------------------------------------------------------------
+   Üst bar (başkan + sekreterya ekranları)
+   ------------------------------------------------------------ */
+.ust-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: var(--lacivert); color: #fff;
+  position: sticky; top: 0; z-index: 40;
+}
+.ust-baslik { margin: 0; font-size: 1.1rem; font-weight: 600; flex: 1; }
+.geri-btn {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: rgba(255,255,255,.12); color: #fff;
+  text-decoration: none; font-size: 1.2rem; flex: none;
+}
+.geri-btn:hover { background: rgba(255,255,255,.22); }
+.ikon-btn {
+  display: grid; place-items: center;
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,.12); color: #fff;
+  border: none; font-size: 1.15rem; flex: none;
+}
+.ikon-btn:hover { background: rgba(255,255,255,.22); }
+
+/* Başkanın anlık durumu — sekreterya rozeti */
+.rozet {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(255,255,255,.12); font-size: .82rem; flex: none;
+}
+.rozet-nokta { width: 10px; height: 10px; border-radius: 50%; background: #64748b; }
+.rozet.gorusmede .rozet-nokta { background: var(--yesil);   box-shadow: 0 0 0 4px rgba(22,163,74,.25); }
+.rozet.beklemede .rozet-nokta { background: var(--sari);    box-shadow: 0 0 0 4px rgba(234,179,8,.25); }
+.rozet.bitti     .rozet-nokta { background: var(--kirmizi); box-shadow: 0 0 0 4px rgba(220,38,38,.25); }
+
+/* ------------------------------------------------------------
+   2) BAŞKAN EKRANI
+   ------------------------------------------------------------ */
+.baskan-govde {
+  max-width: 620px; margin: 0 auto; padding: 20px 16px 40px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+/* Aktif kişi + süre sayacı */
+.aktif-kart {
+  background: var(--kart); border-radius: var(--r);
+  padding: 20px; text-align: center; box-shadow: var(--golge);
+  border-left: 6px solid #cbd5e1;
+}
+.aktif-kart.gorusmede { border-left-color: var(--yesil); }
+.aktif-kart.beklemede { border-left-color: var(--sari); }
+.aktif-kart.bitti     { border-left-color: var(--kirmizi); }
+
+.aktif-etiket {
+  font-size: .74rem; text-transform: uppercase; letter-spacing: .8px;
+  color: var(--yazi-soluk); margin-bottom: 6px;
+}
+.aktif-ad { font-size: 1.5rem; font-weight: 700; }
+.aktif-sure {
+  margin-top: 8px;
+  font-size: 2.1rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--yazi-soluk); letter-spacing: 1px;
+}
+.aktif-kart.gorusmede .aktif-sure { color: var(--yesil-koyu); }
+.aktif-kart.beklemede .aktif-sure { color: var(--sari-koyu); }
+#aktifSure.tukendi { color: var(--kirmizi); }
+
+.aktif-sure-etiket {
+  font-size: .74rem; color: var(--yazi-soluk); margin-top: 2px;
+}
+#aktifSure.tukendi + .aktif-sure-etiket { color: var(--kirmizi); font-weight: 600; }
+
+/* Üç durum butonu */
+.durum-butonlar { display: flex; flex-direction: column; gap: 12px; }
+.durum-btn {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 18px 20px; border-radius: var(--r);
+  border: 3px solid transparent; color: #fff; text-align: left;
+  box-shadow: var(--golge);
+  transition: transform .12s ease, filter .12s ease;
+}
+.durum-btn:hover  { filter: brightness(1.06); }
+.durum-btn:active { transform: scale(.99); }
+.durum-btn .durum-ad { font-size: 1.25rem; font-weight: 700; }
+.durum-btn .durum-aciklama { font-size: .84rem; opacity: .92; }
+
+.durum-btn.yesil   { background: var(--yesil); }
+.durum-btn.sari    { background: var(--sari); color: #422006; }
+.durum-btn.kirmizi { background: var(--kirmizi); }
+
+/* Seçili durum belirgin olsun */
+.durum-btn.secili {
+  border-color: var(--yazi);
+  box-shadow: 0 0 0 4px rgba(15,23,42,.12), var(--golge);
+}
+.durum-btn.secili::after {
+  content: "✓ aktif";
+  position: absolute; /* akışı bozmasın diye kart göreli */
+}
+.durum-btn { position: relative; }
+.durum-btn.secili::after { top: 12px; right: 16px; font-size: .74rem; font-weight: 700; opacity: .95; }
+
+/* Sıradaki gelebilir */
+.siradaki-btn {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 18px 20px; border-radius: var(--r); border: 2px dashed #cbd5e1;
+  background: var(--kart); color: var(--yazi); text-align: left;
+}
+.siradaki-btn .siradaki-ad { font-size: 1.1rem; font-weight: 700; }
+.siradaki-btn .siradaki-kim { font-size: .84rem; color: var(--yazi-soluk); }
+.siradaki-btn:disabled { opacity: .45; cursor: not-allowed; }
+.siradaki-btn:not(:disabled) {
+  border: 3px solid var(--mavi); background: #eff6ff;
+  animation: nefes 1.9s ease-in-out infinite;
+}
+@keyframes nefes {
+  0%,100% { box-shadow: 0 0 0 0 rgba(37,99,235,.32); }
+  50%     { box-shadow: 0 0 0 10px rgba(37,99,235,0); }
+}
+
+/* ------------------------------------------------------------
+   3) SEKRETERYA EKRANI
+   ------------------------------------------------------------ */
+.sekreterya-govde {
+  max-width: 1080px; margin: 0 auto; padding: 18px 16px 48px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+/* Bildirim izni banner'ı */
+.bildirim-banner {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px; border-radius: var(--r);
+  background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a;
+  font-size: .88rem;
+}
+.bildirim-metin { flex: 1; min-width: 200px; }
+.bildirim-izin-btn {
+  padding: 8px 16px; border: none; border-radius: 8px;
+  background: var(--mavi); color: #fff; font-weight: 700; white-space: nowrap;
+}
+.bildirim-izin-btn:hover { background: #1d4ed8; }
+
+/* Üç sürükle-bırak kutusu */
+.kutular {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.kutu {
+  background: var(--kart); border-radius: var(--r);
+  box-shadow: var(--golge); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.kutu-baslik {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; font-weight: 700; font-size: .96rem;
+  border-bottom: 1px solid var(--kenar);
+}
+.kutu-renk { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.kutu-gorusmede .kutu-renk { background: var(--yesil); }
+.kutu-siradaki  .kutu-renk { background: var(--mavi); }
+
+.kutu-icerik {
+  padding: 12px; min-height: 96px; flex: 1;
+  display: flex; flex-direction: column; gap: 8px;
+  transition: background .12s ease;
+}
+.kutu-icerik.uzerinde { background: #eff6ff; outline: 2px dashed var(--mavi); outline-offset: -6px; }
+.kutu-bos { margin: 0; color: #94a3b8; font-size: .84rem; text-align: center; padding: 18px 0; }
+
+/* Kutu içindeki kişi kartı */
+.kisi-kart {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--zemin); border: 1px solid var(--kenar);
+  cursor: grab; user-select: none;
+}
+.kisi-kart:active { cursor: grabbing; }
+.kisi-kart.tasiniyor { opacity: .4; }
+.kisi-kart .k-ad { font-weight: 600; flex: 1; }
+.kisi-kart .k-saat {
+  font-size: .8rem; color: var(--yazi-soluk);
+  font-variant-numeric: tabular-nums;
+}
+.kisi-kart .k-geri {
+  border: none; background: transparent; color: var(--yazi-soluk);
+  font-size: 1rem; padding: 2px 6px; border-radius: 6px; flex: none;
+}
+.kisi-kart .k-geri:hover { background: #e2e8f0; color: var(--yazi); }
+
+/* Kişi ekleme formu */
+.ekle-form {
+  display: grid; gap: 8px;
+  grid-template-columns: 1fr 1fr 130px 2fr auto;
+  background: var(--kart); padding: 12px; border-radius: var(--r);
+  box-shadow: var(--golge);
+}
+.ekle-form input {
+  padding: 11px 12px; border: 1px solid var(--kenar);
+  border-radius: 10px; background: #fff; min-width: 0;
+}
+.ekle-form input:focus { outline: 2px solid var(--mavi); outline-offset: -1px; border-color: var(--mavi); }
+.ekle-btn {
+  padding: 11px 20px; border: none; border-radius: 10px;
+  background: var(--yesil); color: #fff; font-weight: 700; white-space: nowrap;
+}
+.ekle-btn:hover { background: var(--yesil-koyu); }
+
+/* Tablo */
+.tablo-sarmal {
+  background: var(--kart); border-radius: var(--r);
+  box-shadow: var(--golge); overflow-x: auto;
+  transition: background .12s ease;
+}
+.tablo-sarmal.uzerinde { background: #eff6ff; outline: 2px dashed var(--mavi); outline-offset: -6px; }
+
+.tablo { width: 100%; border-collapse: collapse; min-width: 640px; }
+.tablo th {
+  text-align: left; padding: 12px 14px;
+  font-size: .76rem; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--yazi-soluk); border-bottom: 1px solid var(--kenar);
+  background: #f8fafc; white-space: nowrap;
+}
+.tablo td {
+  padding: 6px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle;
+}
+.tablo tbody tr:last-child td { border-bottom: none; }
+.tablo tbody tr.satir-tasiniyor { opacity: .4; }
+.tablo .s-tut  { width: 34px; }
+.tablo .s-islem { width: 96px; }
+
+/* Satır içi düzenlenebilir hücreler */
+.hucre-input {
+  width: 100%; padding: 8px 10px;
+  border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--yazi);
+}
+.hucre-input:hover { background: #f8fafc; border-color: var(--kenar); }
+.hucre-input:focus { outline: 2px solid var(--mavi); outline-offset: -1px; background: #fff; }
+
+/* Sürükleme tutamacı */
+.tut {
+  cursor: grab; color: #94a3b8; text-align: center;
+  font-size: 1.1rem; user-select: none; line-height: 1;
+}
+.tut:active { cursor: grabbing; }
+
+.sil-btn {
+  border: none; background: #fef2f2; color: var(--kirmizi);
+  padding: 7px 12px; border-radius: 8px; font-size: .84rem; font-weight: 600;
+}
+.sil-btn:hover { background: var(--kirmizi); color: #fff; }
+
+/* Kutulara taşınmış kişiler tabloda soluk + etiketli görünür */
+.tablo tbody tr.baska-kutuda { background: #fafafa; }
+.tablo tbody tr.baska-kutuda .hucre-input { color: var(--yazi-soluk); }
+.kutu-etiket {
+  display: inline-block; margin-left: 6px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: .68rem; font-weight: 700; white-space: nowrap;
+  vertical-align: middle;
+}
+.kutu-etiket.gorusmede { background: #dcfce7; color: var(--yesil-koyu); }
+.kutu-etiket.siradaki  { background: #dbeafe; color: #1d4ed8; }
+.kutu-etiket.beklemede { background: #fef9c3; color: var(--sari-koyu); }
+
+/* Biten görüşmelerde isminin yanında: gerçekte ne kadar sürdüğü */
+.sure-etiket {
+  display: inline-block; margin-left: 6px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: .68rem; font-weight: 700; white-space: nowrap;
+  vertical-align: middle; font-variant-numeric: tabular-nums;
+  background: #f1f5f9; color: var(--yazi-soluk);
+}
+.sure-etiket-bekleme { background: #fef9c3; color: var(--sari-koyu); }
+
+/* Şu an görüşülen/beklemede olan kişinin yanında canlı artan süre */
+.canli-sure {
+  display: inline-block; margin-left: 6px;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: .68rem; font-weight: 700; white-space: nowrap;
+  vertical-align: middle; font-variant-numeric: tabular-nums;
+  background: #f1f5f9; color: var(--yazi-soluk);
+}
+.canli-sure.gorusmede { background: #dcfce7; color: var(--yesil-koyu); }
+.canli-sure.beklemede { background: #fef9c3; color: var(--sari-koyu); }
+
+/* Başkan ekranındaki büyük kartta, isminin altında */
+.aktif-canli-sure {
+  display: block; margin: 6px auto 0; width: fit-content;
+  font-size: .8rem; padding: 4px 12px;
+}
+
+.tablo-bos { margin: 0; padding: 28px 16px; text-align: center; color: #94a3b8; font-size: .9rem; }
+
+/* ------------------------------------------------------------
+   Bitti görüşmeler — ayrı, katlanır bir bölüm (buton gibi)
+   ------------------------------------------------------------ */
+.bitti-baslik-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; border: none; background: #fef2f2; color: var(--kirmizi-koyu);
+  font-weight: 700; font-size: .96rem; text-align: left;
+  transition: background .12s ease;
+}
+.bitti-baslik-btn:hover { background: #fee2e2; }
+.bitti-renk { width: 12px; height: 12px; border-radius: 50%; background: var(--kirmizi); flex: none; }
+.bitti-baslik-metin { flex: 1; }
+.sayac-rozet {
+  min-width: 22px; padding: 2px 8px; border-radius: 999px;
+  background: rgba(185,28,28,.14); color: var(--kirmizi-koyu);
+  font-size: .78rem; font-weight: 700; text-align: center;
+}
+.bitti-ok { font-size: .8rem; transition: transform .15s ease; }
+.bitti-baslik-btn[aria-expanded="true"] .bitti-ok { transform: rotate(180deg); }
+.bitti-kapsayici { border-top: 1px solid var(--kenar); }
+
+/* ------------------------------------------------------------
+   Başkanın sayfasındaki salt-okunur liste (her zaman açık)
+   ------------------------------------------------------------ */
+.okuma-kart {
+  background: var(--kart); border-radius: var(--r);
+  box-shadow: var(--golge); overflow: hidden;
+}
+.okuma-baslik {
+  padding: 12px 16px; font-weight: 700; font-size: .96rem;
+  border-bottom: 1px solid var(--kenar); background: #f8fafc;
+}
+.okuma-icerik { overflow-x: auto; }
+.tablo-okuma { min-width: 460px; }
+.tablo-okuma th { background: #fff; }
+.tablo-okuma td { padding: 11px 14px; }
+
+/* Başkan ekranı — Ayarlar kartı: süre doldu bildirimi aç/kapa */
+.ayar-icerik { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.ayar-satir { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.ayar-satir input[type="checkbox"] { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--yesil); }
+.ayar-satir strong { display: block; font-size: .92rem; }
+.ayar-satir small { display: block; color: var(--yazi-soluk); font-size: .8rem; margin-top: 2px; }
+.ayar-not { margin: 0; font-size: .8rem; color: var(--yazi-soluk); }
+
+/* Ayarlar popup — sağ üstteki ⚙️ ikonuyla açılır, ekranın ortasında */
+.modal-ortu {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(15, 23, 42, .5);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.modal-ortu[hidden] { display: none; }
+.modal-kutu {
+  width: 100%; max-width: 420px;
+  background: var(--kart); border-radius: var(--r);
+  box-shadow: 0 20px 60px rgba(15,23,42,.35);
+  overflow: hidden;
+}
+.modal-baslik {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; font-weight: 700; font-size: .96rem;
+  border-bottom: 1px solid var(--kenar); background: #f8fafc;
+}
+.modal-kapat {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 8px;
+  border: none; background: transparent; color: var(--yazi-soluk);
+  font-size: 1rem;
+}
+.modal-kapat:hover { background: var(--zemin); color: var(--yazi); }
+
+/* ------------------------------------------------------------
+   Telefon
+   ------------------------------------------------------------ */
+@media (max-width: 720px) {
+  .ekle-form { grid-template-columns: 1fr 1fr; }
+  .ekle-form input[name="not"] { grid-column: 1 / -1; }
+  .ekle-btn { grid-column: 1 / -1; }
+  .aktif-sure { font-size: 1.9rem; }
+  .durum-btn { padding: 16px; }
+
+  /* Telefonda tablo yatay kaymasın: her satır bir kart olsun */
+  .tablo-sarmal { overflow-x: visible; }
+  #tabloGovde ~ *, .tablo { min-width: 0; }
+  .tablo thead { display: none; }
+  .tablo, .tablo tbody, .tablo tr, .tablo td { display: block; width: auto; }
+
+  .tablo tbody tr {
+    position: relative;
+    padding: 12px 12px 12px 38px;
+    border-bottom: 1px solid var(--kenar);
+  }
+  .tablo tbody tr:last-child { border-bottom: none; }
+  .tablo td { padding: 3px 0; border: none; }
+
+  /* Sürükleme tutamacı sol kenarda dikey ortalı */
+  .tablo td.tut {
+    position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
+    width: 26px; padding: 8px 0; font-size: 1.2rem;
+  }
+
+  /* Ad ve Soyad yan yana, altında saat/not */
+  .tablo td:nth-child(2), .tablo td:nth-child(3) {
+    display: inline-block; width: calc(50% - 4px); vertical-align: top;
+  }
+  .tablo td:nth-child(4) { width: 45%; display: inline-block; }
+  /* Düzenlenebilir tablolarda (ana liste + Bitti): Sil düğmesi sağa yaslı */
+  #tabloGovde td:last-child, #bittiGovde td:last-child { text-align: right; margin-top: 4px; }
+  .hucre-input { background: #f8fafc; border-color: var(--kenar); }
+
+  /* Başkanın okuma tablosu da kaymasın */
+  .okuma-icerik { overflow-x: visible; }
+  .tablo-okuma { min-width: 0; }
+  .tablo-okuma thead { display: none; }
+  .tablo-okuma tbody tr { padding: 12px 14px; }
+  .tablo-okuma td { padding: 2px 0; }
+  .tablo-okuma td:nth-child(1), .tablo-okuma td:nth-child(2) {
+    display: inline-block; width: auto; font-weight: 600; margin-right: 6px;
+  }
+  .tablo-okuma td:nth-child(3) { display: inline-block; color: var(--yazi-soluk); }
+  .tablo-okuma td:nth-child(5) {           /* Not — alt satırda, soluk */
+    color: var(--yazi-soluk); font-size: .88rem; margin-top: 2px;
+  }
+  .tablo-okuma td:nth-child(5):empty { display: none; }
+
+  /* Bitti tablosunda Durum sütunu yok: Not, 5. değil 4. hücre */
+  .tablo-okuma-bitti td:nth-child(4) {
+    display: block; color: var(--yazi-soluk); font-size: .88rem; margin-top: 2px;
+  }
+  .tablo-okuma-bitti td:nth-child(4):empty { display: none; }
+}
