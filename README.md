@@ -93,8 +93,8 @@ Adresi doğrudan role gitmesi için kaydedebilirler:
 
 | Dosya | İçerik |
 |---|---|
-| `index.html` | Üç ekranın yapısı (giriş / başkan / sekreterya) |
-| `styles.css` | Tüm görünüm — telefon ve masaüstü uyumlu |
+| `index.html` | Dört ekranın yapısı (giriş / başkan / sekreterya / rapor) |
+| `styles.css` | Tüm görünüm — telefon, tablet ve masaüstü uyumlu |
 | `app.js` | Tüm mantık: senkron, durum geçişleri, otomatik akış, sürükle-bırak, süre sayacı |
 | `firebase-config.js` | **Sadece burayı düzenlemeniz gerekir** — Firebase bilgileri |
 | `hazir-liste.js` | Çizelgeden aktarılmış görüşme sırası — "Hazır listeyi yükle" butonu bunu kullanır |
@@ -174,7 +174,9 @@ görünmez; bundan sonraki tüm değişiklikler kaydedilir.
 
 ## Küçük ayrıntılar
 
-- **Telefonda** tablo yatay kaymaz; her kişi bir kart olarak alt alta görünür.
+- **Telefon ve küçük tablette (≤820px)** tablo yatay kaymaz; her kişi bir kart olarak alt alta görünür.
+  Daha geniş ekranlarda (≥821px) klasik tablo görünümü kullanılır; sütun genişlikleri sabittir,
+  böylece uzun ad/soyad "Not" sütununu ezmez.
 - Sürükleme sırasında ekranın üst/alt kenarına yaklaşınca sayfa **kendiliğinden kayar**.
 - Sekreterya bir nota yazarken karşı taraftan güncelleme gelirse **yazdığı metin ve imleç korunur**.
 - Kutulardaki kişi kartındaki **↩** düğmesi kişiyi listeye geri alır.
