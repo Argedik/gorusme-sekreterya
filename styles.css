@@ -431,7 +431,26 @@ input { max-width: 100%; }
 .tablo tbody tr:last-child td { border-bottom: none; }
 .tablo tbody tr.satir-tasiniyor { opacity: .4; }
 .tablo .s-tut  { width: 34px; }
+.tablo .s-tasi { width: 148px; }
 .tablo .s-islem { width: 96px; }
+
+/* Dokunmatik taşıma düğmeleri — sürüklemenin dokunmatik alternatifi */
+.tasi-hucre { display: flex; flex-direction: column; gap: 5px; }
+.k-tasi {
+  border: 1px solid var(--kenar); background: #fff; color: var(--yazi);
+  padding: 8px 10px; border-radius: 9px;
+  font-size: .82rem; font-weight: 600; white-space: nowrap;
+  cursor: pointer;
+}
+.k-tasi-gorusmede { background: #f0fdf4; border-color: #bbf7d0; color: var(--yesil-koyu); }
+.k-tasi-siradaki  { background: #fefce8; border-color: #fef08a; color: var(--sari-koyu); }
+.k-tasi-gorusmede:hover:not(:disabled) {
+  background: var(--yesil); border-color: var(--yesil); color: #fff;
+}
+.k-tasi-siradaki:hover:not(:disabled) {
+  background: var(--sari-koyu); border-color: var(--sari-koyu); color: #fff;
+}
+.k-tasi:disabled { opacity: .38; cursor: default; }
 
 /* Tablet + masaüstü: sütun genişlikleri sabit — "Not" sütunu ezilmesin,
    uzun ad/soyad diğer sütunları daraltmasın. */
@@ -821,13 +840,26 @@ input { max-width: 100%; }
   #bittiGovde  td:nth-child(2), #bittiGovde  td:nth-child(3) {
     flex: 1 1 130px; align-self: flex-start;
   }
-  /* Saat ve Sil aynı satırda: Saat solda, Sil sağa yaslı */
+  /* Saat ve Sil aynı satırda: Saat solda, Sil sağa yaslı.
+     Ana tabloda Taşı sütunu araya girdiği için Sil 7., bitti tablosunda 6. hücre. */
   #tabloGovde td:nth-child(4), #bittiGovde td:nth-child(4) { flex: 0 1 150px; }
-  #tabloGovde td:nth-child(6), #bittiGovde td:nth-child(6) {
+  #tabloGovde td:nth-child(7), #bittiGovde td:nth-child(6) {
     order: 2; flex: 1 1 auto; display: flex; justify-content: flex-end;
   }
   /* Not en altta, tam genişlik */
   #tabloGovde td:nth-child(5), #bittiGovde td:nth-child(5) { order: 3; flex: 1 1 100%; }
+
+  /* Taşıma düğmeleri kartın en altında, yan yana, parmakla rahat basılacak boyutta */
+  /* display: flex burada tekrar yazılmalı — yukarıdaki ".tablo td { display: block }"
+     seçicisi .tasi-hucre'den daha özgül olduğu için sütun düzeni ezilirdi. */
+  #tabloGovde td.tasi-hucre {
+    order: 4; flex: 1 1 100%;
+    display: flex; flex-direction: row; gap: 8px; margin-top: 2px;
+  }
+  #tabloGovde td.tasi-hucre .k-tasi {
+    flex: 1 1 0; min-height: 46px; font-size: .9rem;
+    white-space: normal; line-height: 1.2;
+  }
 
   .hucre-input { background: #f8fafc; border-color: var(--kenar); }
 

@@ -7,10 +7,10 @@
 //  Firebase ayarlanmamışsa yerel deneme moduna düşer.
 // ============================================================
 
-import { firebaseConfig } from "./firebase-config.js?v=7";
-import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=7";
-import { tamAd, sureBicimle } from "./ortak.js?v=7";
-import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=7";
+import { firebaseConfig } from "./firebase-config.js?v=8";
+import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=8";
+import { tamAd, sureBicimle } from "./ortak.js?v=8";
+import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=8";
 
 /* ============================================================
    1) VERİ KATMANI
@@ -991,6 +991,27 @@ function tabloSatirOlustur(k, { etiketGoster, sureGoster }) {
     tr.appendChild(td);
   });
 
+  // Dokunmatik taşıma düğmeleri: telefonda sürüklemek zor, tek dokunuş yeter.
+  // Bitti tablosunda gösterilmez (sureGoster yalnızca o tabloda true).
+  if (!sureGoster) {
+    const tdTasi = document.createElement("td");
+    tdTasi.className = "tasi-hucre";
+    [["gorusmede", "▶ Görüşmeye al"], ["siradaki", "⏳ Sıraya al"]].forEach(([hedef, metin]) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "k-tasi k-tasi-" + hedef;
+      btn.textContent = metin;
+      // Kişi zaten o kutudaysa düğme pasif
+      btn.disabled = kutu === hedef;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        kutuyaTasi(k.id, hedef);
+      });
+      tdTasi.appendChild(btn);
+    });
+    tr.appendChild(tdTasi);
+  }
+
   const tdIslem = document.createElement("td");
   const sil = document.createElement("button");
   sil.className = "sil-btn";
@@ -1143,7 +1164,8 @@ function surukleBagla(tutamac, kisiId, satir = null) {
 
   tutamac.addEventListener("pointerdown", (e) => {
     if (e.button !== undefined && e.button !== 0) return;
-    if (e.target.closest(".k-geri")) return;
+    // Düğmeye dokunmak sürüklemeyi başlatmasın, tıklama yutulmasın
+    if (e.target.closest(".k-geri, .k-tasi")) return;
 
     const baslangic = { x: e.clientX, y: e.clientY };
     let basladi = false;
