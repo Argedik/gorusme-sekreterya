@@ -1,24 +1,23 @@
 // ============================================================
 //  FIREBASE AYARLARI
 // ============================================================
-//  Ayrı cihazlar arasında CANLI senkron için buraya kendi
-//  Firebase projenizin bilgilerini yapıştırın.
+//  Proje: gorusme-sekreterye — Realtime Database, europe-west1
 //
-//  Nasıl alınır? README.md dosyasındaki adımlara bakın.
-//  (apiKey gibi değerler "gizli" değildir; web uygulamasına
-//   gömülmesi normaldir — güvenlik, veritabanı kurallarıyla sağlanır.)
+//  Bu değerler GİZLİ DEĞİLDİR; web uygulamasına gömülmesi normaldir.
+//  Güvenlik veritabanı kurallarıyla sağlanır: veriye yalnızca
+//  Firebase Authentication ile giriş yapmış kullanıcılar erişebilir
+//  (database.rules.json → "auth != null").
 //
-//  ⚠️  Buradaki değerleri değiştirmezseniz site "yerel deneme
-//      modunda" çalışır: aynı bilgisayarda açık sekmeler senkron
-//      olur, ama FARKLI cihazlar birbirini GÖRMEZ.
+//  databaseURL bölgesel bir adres: europe-west1 veritabanları
+//  "firebasedatabase.app" ile biter, "firebaseio.com" ile DEĞİL.
 // ============================================================
 
 export const firebaseConfig = {
-  apiKey: "BURAYA_API_KEY",
-  authDomain: "BURAYA_PROJE.firebaseapp.com",
-  databaseURL: "https://BURAYA_PROJE-default-rtdb.firebaseio.com",
-  projectId: "BURAYA_PROJE",
-  storageBucket: "BURAYA_PROJE.appspot.com",
-  messagingSenderId: "BURAYA_SENDER_ID",
-  appId: "BURAYA_APP_ID",
+  apiKey: "AIzaSyC_KtIa3Q3EmgcLAJqQr93wZcz2CNPRWqo",
+  authDomain: "gorusme-sekreterye.firebaseapp.com",
+  databaseURL: "https://gorusme-sekreterye-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "gorusme-sekreterye",
+  storageBucket: "gorusme-sekreterye.firebasestorage.app",
+  messagingSenderId: "671334469119",
+  appId: "1:671334469119:web:adf5fe89ac22a989872bca",
 };

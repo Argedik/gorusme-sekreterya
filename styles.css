@@ -619,6 +619,60 @@ input { max-width: 100%; }
 .yedek-durum.hata { color: var(--kirmizi); }
 
 /* ------------------------------------------------------------
+   KİMLİK KAPISI — giriş yapılmadan hiçbir veri okunamaz
+   ------------------------------------------------------------ */
+.kimlik-kapi {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+  overflow-y: auto;
+}
+.kimlik-kapi[hidden] { display: none; }
+.kimlik-kutu {
+  width: 100%; max-width: 380px; margin: auto 0;
+  display: flex; flex-direction: column;
+  background: var(--kart); padding: 26px 22px;
+  border-radius: 20px; box-shadow: 0 20px 60px rgba(15, 23, 42, .4);
+}
+.kimlik-baslik { margin: 0 0 4px; font-size: 1.8rem; letter-spacing: -.5px; }
+.kimlik-alt { margin: 0 0 18px; color: var(--yazi-soluk); font-size: .9rem; }
+.kimlik-etiket {
+  font-size: .82rem; font-weight: 600; color: var(--yazi-soluk);
+  margin-bottom: 5px;
+}
+.kimlik-kutu input {
+  width: 100%; margin-bottom: 14px; padding: 12px 14px;
+  border: 1px solid var(--kenar); border-radius: 10px;
+  background: #f8fafc; color: var(--yazi);
+  font-size: 1rem;   /* 16px altı: iOS Safari odaklanınca sayfayı yakınlaştırır */
+}
+.kimlik-kutu input:focus {
+  outline: 2px solid var(--mavi); outline-offset: -1px; background: #fff;
+}
+.kimlik-btn {
+  margin-top: 4px; padding: 13px 18px; border: none; border-radius: 10px;
+  background: var(--yesil); color: #fff; font-size: 1rem; font-weight: 700;
+}
+.kimlik-btn:hover:not(:disabled) { background: var(--yesil-koyu); }
+.kimlik-btn:disabled { opacity: .6; }
+.kimlik-hata {
+  margin: 12px 0 0; padding: 10px 12px; border-radius: 10px;
+  background: #fee2e2; color: #991b1b;
+  font-size: .86rem; font-weight: 600; line-height: 1.45;
+}
+
+/* Giriş ekranındaki çıkış düğmesi — kartların altında, sessiz dursun */
+.cikis-btn {
+  margin: 26px auto 0; padding: 8px 14px;
+  border: 1px solid rgba(148, 163, 184, .35); border-radius: 999px;
+  background: transparent; color: #94a3b8; font-size: .82rem;
+}
+.cikis-btn:hover { border-color: #94a3b8; color: #cbd5e1; }
+.cikis-btn[hidden] { display: none; }
+
+/* ------------------------------------------------------------
    4) RAPOR EKRANI
    ------------------------------------------------------------ */
 .rol-rapor:hover { border-color: var(--lacivert); }
