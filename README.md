@@ -38,40 +38,38 @@ birini Sekreterya yapın — **aynı bilgisayardaki sekmeler** senkron çalış�
 
 ---
 
-## 2) Ayrı cihazlarda canlı senkron (Firebase — ücretsiz, 5 dakika)
+## 2) Canlı senkron — kurulu ve çalışıyor
 
-1. [console.firebase.google.com](https://console.firebase.google.com) → **Add project** → bir ad verin (Google Analytics'e gerek yok, kapatabilirsiniz).
-2. Sol menüden **Build → Realtime Database** → **Create Database** → bölge seçin → **Start in test mode** → Enable.
-3. Sol üstteki ⚙️ **Project settings** → aşağıda **Your apps** → web simgesi **`</>`** → uygulamaya bir ad verin → **Register app**.
-4. Ekranda çıkan `firebaseConfig = { ... }` bloğunu kopyalayın.
-5. Bu klasördeki **`firebase-config.js`** dosyasını açın, içindeki değerleri kopyaladığınız gerçek değerlerle **değiştirin**.
-   `databaseURL` satırının **mutlaka bulunması** gerekir (Realtime Database adresi, `...firebaseio.com` ile biter). Firebase bunu bazen config bloğunda göstermez — o zaman Realtime Database sayfasının üstündeki adresi yazın.
-6. Sayfayı yenileyin. Sağ üstte **"canlı bağlı"** yazmalı. Artık ayrı cihazlar senkron.
+Firebase **kuruldu**, ayrıca bir şey yapmanız gerekmez:
 
-### Güvenlik kuralları (önemli)
+- Proje: `gorusme-sekreterye` — Realtime Database, bölge `europe-west1`
+- Ayarlar `firebase-config.js` içinde; adres `...europe-west1.firebasedatabase.app`
+  ile biter (bölgesel veritabanları `firebaseio.com` kullanmaz).
+- Sağ altta **"canlı bağlı"** yazıyorsa senkron açık. "yerel deneme modu"
+  yazıyorsa Firebase'e ulaşılamıyor, veri yalnızca o tarayıcıda kalır.
 
-Test modu **30 gün sonra kapanır** ve o süre boyunca adresi bilen herkes veriyi
-okuyup yazabilir. İç kullanım için Realtime Database → **Rules** sekmesine
-en azından şunu yazın ve `SIZIN_GIZLI_SOZUNUZ` yerine kimseye söylemediğiniz
-bir kelime koyun (bu kural, veriyi yalnızca bu siteyi bilenlerin kullanmasını
-sağlamaz; gerçek koruma için 3. adımı okuyun):
+### Giriş yok — bilinçli tercih
+
+**Sitede kimlik doğrulama YOKTUR ve eklenmeyecektir.** Adresi bilen herkes
+açar, listeyi görür ve değiştirebilir. Kurallar (`database.rules.json`):
 
 ```json
-{
-  "rules": {
-    "oturum": {
-      ".read": true,
-      ".write": true
-    }
-  }
-}
+{ "rules": { "oturum": { ".read": true, ".write": true } } }
 ```
 
-Bu, "adresi bilen yazabilir" demektir — küçük bir iç araç için genelde kabul
-edilir, ama site adresi dışarı sızarsa herkes müdahale edebilir. Gerçek koruma
-isterseniz Firebase **Authentication** (e-posta/şifre) ekleyip kuralı
-`".read": "auth != null"` şeklinde değiştirmek gerekir; isterseniz bunu sonradan
-ekleyebiliriz.
+Sebep: bu araç tek günlük iç kullanım için yapıldı, ömrü bitince Firebase
+projesi silinecek. Giriş ekranı, şifre, kullanıcı hesabı, `auth != null`
+kuralı **istenmiyor** — bunlar süreci uzatıyor ve karşılığında bir günlük bir
+araca değmiyor. Kural değiştirmek gerekirse:
+
+```bash
+firebase deploy --only database --project gorusme-sekreterye
+```
+
+### Kullanım sonrası
+
+Site bittiğinde Firebase konsolundan projeyi silmek yeterli; veriler onunla
+birlikte gider.
 
 ---
 

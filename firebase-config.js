@@ -4,9 +4,10 @@
 //  Proje: gorusme-sekreterye — Realtime Database, europe-west1
 //
 //  Bu değerler GİZLİ DEĞİLDİR; web uygulamasına gömülmesi normaldir.
-//  Güvenlik veritabanı kurallarıyla sağlanır: veriye yalnızca
-//  Firebase Authentication ile giriş yapmış kullanıcılar erişebilir
-//  (database.rules.json → "auth != null").
+//
+//  Sitede kimlik doğrulama YOKTUR: adresi bilen herkes okuyup yazabilir
+//  (database.rules.json → "oturum" düğümü herkese açık). Tek günlük iç
+//  kullanım için bilinçli tercih; ömrü bitince proje silinecek.
 //
 //  databaseURL bölgesel bir adres: europe-west1 veritabanları
 //  "firebasedatabase.app" ile biter, "firebaseio.com" ile DEĞİL.

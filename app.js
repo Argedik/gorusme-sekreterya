@@ -7,10 +7,10 @@
 //  Firebase ayarlanmamışsa yerel deneme moduna düşer.
 // ============================================================
 
-import { firebaseConfig } from "./firebase-config.js";
-import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js";
-import { tamAd, sureBicimle } from "./ortak.js";
-import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js";
+import { firebaseConfig } from "./firebase-config.js?v=6";
+import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=6";
+import { tamAd, sureBicimle } from "./ortak.js?v=6";
+import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=6";
 
 /* ============================================================
    1) VERİ KATMANI
