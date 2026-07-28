@@ -77,9 +77,10 @@ button { cursor: pointer; }
 }
 .giris-alt { margin: 0 0 32px; color: #94a3b8; font-size: 1rem; }
 
+/* İki büyük rol kartı yan yana; Rapor altta, ortalı ve daha küçük */
 .giris-butonlar {
   display: grid; gap: 18px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .rol-btn {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -92,7 +93,20 @@ button { cursor: pointer; }
 .rol-btn:active { transform: translateY(0); }
 .rol-baskan:hover     { border-color: var(--mavi); }
 .rol-sekreterya:hover { border-color: var(--yesil); }
+
+/* Rapor kartı: iki büyük kartın altında, ortalı, daha küçük ve yatay */
+.rol-rapor {
+  grid-column: 1 / -1; justify-self: center;
+  display: grid; grid-template-columns: auto 1fr;
+  column-gap: 12px; align-items: center;
+  padding: 13px 22px; border-radius: 16px; text-align: left;
+}
+.rol-rapor .rol-ikon { grid-row: 1 / 3; font-size: 1.7rem; }
+.rol-rapor .rol-ad { font-size: 1rem; }
+.rol-rapor .rol-aciklama { font-size: .78rem; }
 .rol-ikon { font-size: 2.6rem; line-height: 1; }
+/* Başkan ikonu emoji değil, çizim: emoji fontlarında başörtü rengi seçilemiyor */
+.ikon-baskan { width: 2.6rem; height: 2.6rem; display: block; }
 .rol-ad { font-size: 1.4rem; font-weight: 700; }
 .rol-aciklama { font-size: .86rem; color: var(--yazi-soluk); }
 
@@ -305,6 +319,21 @@ button { cursor: pointer; }
 }
 .ekle-btn:hover { background: var(--yesil-koyu); }
 
+/* Hazır çizelge yükleme satırı */
+.hazir-satir {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--kart); padding: 10px 12px;
+  border-radius: var(--r); box-shadow: var(--golge);
+}
+.hazir-btn {
+  padding: 9px 14px; border: 1px solid var(--kenar); border-radius: 10px;
+  background: #f8fafc; color: var(--yazi); font-weight: 600; white-space: nowrap;
+}
+.hazir-btn:hover:not(:disabled) { background: #eff6ff; border-color: var(--mavi); color: var(--mavi); }
+.hazir-btn:disabled { opacity: .5; }
+.hazir-btn-sil:hover:not(:disabled) { background: #fee2e2; border-color: var(--kirmizi); color: var(--kirmizi); }
+.hazir-aciklama { color: var(--yazi-soluk); font-size: .85rem; }
+
 /* Tablo */
 .tablo-sarmal {
   background: var(--kart); border-radius: var(--r);
@@ -463,6 +492,150 @@ button { cursor: pointer; }
   font-size: 1rem;
 }
 .modal-kapat:hover { background: var(--zemin); color: var(--yazi); }
+
+/* ------------------------------------------------------------
+   4) RAPOR EKRANI
+   ------------------------------------------------------------ */
+.rol-rapor:hover { border-color: var(--lacivert); }
+
+/* Başkan ekranındaki "Günün raporunu çıkar" bağlantısı */
+.rapor-cikis-btn {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 16px 18px; border-radius: var(--r);
+  background: var(--lacivert); color: #fff; text-decoration: none;
+  box-shadow: var(--golge);
+}
+.rapor-cikis-btn:hover { background: #0f172a; }
+.rapor-cikis-ad { font-weight: 700; font-size: 1.05rem; }
+.rapor-cikis-alt { font-size: .82rem; color: #94a3b8; }
+/* Sırada kimse kalmadığında: gün bitti, rapor zamanı */
+.rapor-cikis-btn.hazir { background: var(--yesil); }
+.rapor-cikis-btn.hazir:hover { background: var(--yesil-koyu); }
+.rapor-cikis-btn.hazir .rapor-cikis-alt { color: #dcfce7; }
+
+.rapor-govde {
+  max-width: 780px; margin: 0 auto; padding: 20px 16px 60px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.rapor-arac {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  background: var(--kart); padding: 12px; border-radius: var(--r);
+  box-shadow: var(--golge);
+}
+.rapor-btn {
+  padding: 10px 16px; border: 1px solid var(--kenar); border-radius: 10px;
+  background: #f8fafc; color: var(--yazi); font-weight: 600;
+}
+.rapor-btn:hover { background: #eff6ff; border-color: var(--mavi); color: var(--mavi); }
+.rapor-btn-ana {
+  background: var(--yesil); border-color: var(--yesil); color: #fff; margin-right: auto;
+}
+.rapor-btn-ana:hover { background: var(--yesil-koyu); border-color: var(--yesil-koyu); color: #fff; }
+
+.rapor-ipucu {
+  margin: 0; padding: 0 4px;
+  font-size: .84rem; color: var(--yazi-soluk); line-height: 1.5;
+}
+.rapor-bilgi { display: block; margin-top: 4px; color: var(--mavi); font-weight: 600; }
+
+.rapor-maddeler {
+  background: var(--kart); border-radius: var(--r);
+  box-shadow: var(--golge); overflow: hidden;
+}
+
+/* Bir madde = düzenlenebilir metin + sil düğmesi */
+.rapor-madde {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 10px 12px; border-bottom: 1px solid var(--kenar);
+}
+.rapor-madde:last-child { border-bottom: none; }
+.rapor-madde:hover { background: #f8fafc; }
+
+.rapor-metin {
+  flex: 1; min-width: 0;
+  white-space: pre-wrap; overflow-wrap: break-word;
+  padding: 6px 8px; border-radius: 8px; line-height: 1.55;
+  border: 1px solid transparent;
+}
+.rapor-metin:hover { border-color: var(--kenar); }
+.rapor-metin:focus {
+  outline: 2px solid var(--mavi); outline-offset: -1px;
+  border-color: var(--mavi); background: #fff;
+}
+.rapor-metin:empty::before {
+  content: "Buraya yazın…"; color: #94a3b8;
+}
+
+.rapor-sil {
+  flex: none; padding: 6px 8px; border: none; border-radius: 8px;
+  background: transparent; color: var(--yazi-soluk); font-size: 1rem;
+}
+.rapor-sil:hover { background: #fee2e2; color: var(--kirmizi); }
+
+/* Madde türleri: rapor okunurken hiyerarşi belli olsun */
+.tur-baslik .rapor-metin { font-size: 1.25rem; font-weight: 700; letter-spacing: -.2px; }
+.tur-bolum { background: #f8fafc; }
+.tur-bolum .rapor-metin {
+  font-size: .8rem; font-weight: 700; letter-spacing: .8px;
+  color: var(--yazi-soluk);
+}
+.tur-gorusme .rapor-metin { border-left: 3px solid var(--yesil); border-radius: 8px; }
+.tur-bekleyen .rapor-metin { border-left: 3px solid #cbd5e1; border-radius: 8px; }
+.tur-olay .rapor-metin { font-size: .88rem; color: #334155; }
+.tur-ozet .rapor-metin { background: #f8fafc; }
+.tur-serbest .rapor-metin { border-left: 3px solid var(--sari); border-radius: 8px; }
+.tur-uyari .rapor-metin {
+  background: #fffbeb; border-left: 3px solid var(--sari-koyu);
+  border-radius: 8px; color: #713f12; font-size: .88rem;
+}
+/* Elle yazılmış maddeler artık veriyle güncellenmez — ayırt edilsin */
+.rapor-madde.elle .rapor-metin { border-left: 3px solid var(--sari); border-radius: 8px; }
+
+/* ------------------------------------------------------------
+   Yazdırma / PDF — yalnızca rapor metni kâğıda çıkar
+   ------------------------------------------------------------ */
+@media print {
+  @page { margin: 16mm; }
+
+  body { background: #fff; }
+  /* Araç çubuğu, üst bar, bağlantı rozeti, silme düğmeleri kâğıtta olmasın */
+  .baglanti, .rapor-ust, .rapor-arac, .rapor-ipucu, .rapor-sil { display: none !important; }
+
+  .rapor-govde { max-width: none; padding: 0; gap: 0; }
+  .rapor-maddeler { box-shadow: none; border-radius: 0; }
+
+  .rapor-madde {
+    padding: 2px 0; border-bottom: none;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .rapor-madde:hover { background: none; }
+  .rapor-metin {
+    padding: 0; border: none !important; outline: none !important;
+    border-radius: 0;   /* bölüm çizgisinin ucunda yuvarlak artık kalmasın */
+    font-size: 10.5pt; line-height: 1.45; color: #000;
+  }
+
+  .tur-baslik .rapor-metin { font-size: 16pt; margin-bottom: 6pt; }
+  .tur-bolum { background: none; }
+  .tur-bolum .rapor-metin {
+    margin-top: 12pt; padding-bottom: 2pt;
+    border-bottom: 1px solid #999 !important; color: #000; font-size: 9pt;
+  }
+  .tur-gorusme .rapor-metin, .tur-bekleyen .rapor-metin,
+  .tur-serbest .rapor-metin, .tur-ozet .rapor-metin,
+  .tur-uyari .rapor-metin, .rapor-madde.elle .rapor-metin {
+    padding-left: 0; background: none;
+  }
+  .tur-gorusme { margin-top: 6pt; }
+  .tur-olay .rapor-metin { font-size: 9.5pt; }
+}
+
+/* Dar telefonlarda iki rol kartı yan yana sığmaz: alt alta gelsin */
+@media (max-width: 520px) {
+  .giris-butonlar { grid-template-columns: 1fr; }
+  .rol-rapor { justify-self: stretch; }
+}
 
 /* ------------------------------------------------------------
    Telefon

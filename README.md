@@ -97,7 +97,80 @@ Adresi doğrudan role gitmesi için kaydedebilirler:
 | `styles.css` | Tüm görünüm — telefon ve masaüstü uyumlu |
 | `app.js` | Tüm mantık: senkron, durum geçişleri, otomatik akış, sürükle-bırak, süre sayacı |
 | `firebase-config.js` | **Sadece burayı düzenlemeniz gerekir** — Firebase bilgileri |
+| `hazir-liste.js` | Çizelgeden aktarılmış görüşme sırası — "Hazır listeyi yükle" butonu bunu kullanır |
+| `rapor.js` | Rapor: maddeleri üretir, düzenlemeyi ve taslağı yönetir |
+| `ortak.js` | İki dosyanın paylaştığı küçük yardımcılar (ad, süre, saat biçimleri) |
 | `dev-server.mjs` | Bilgisayarda denemek için küçük yerel sunucu (yayında gerekmez) |
+
+### Hazır liste
+
+Sekreterya ekranında, ekleme formunun altındaki **📋 Hazır listeyi yükle** butonu
+`hazir-liste.js` içindeki çizelgeyi tek dokunuşla listeye ekler — 28 kişiyi elle
+girmek gerekmez. Grup adı (`Toplantı sonrası`, `Çarşamba online`) her kişinin
+**Not** alanına yazılır; not alanı düzenlenebilir olduğu için görüşme sırasında
+üzerine yazabilirsiniz.
+
+Listede zaten kişi varsa buton önce onay sorar, sonra yenileri **sonuna** ekler.
+Çizelge daha önce yüklenmişse (aynı adlar listede varsa) uyarı bunu söyler —
+böylece kayıtlar yanlışlıkla ikiye katlanmaz. Yanında duran
+**🗑 Listeyi temizle** düğmesi (onay sorarak) bütün kayıtları silip temiz
+başlamayı sağlar; olay günlüğü silinmez, temizleme de rapora bir satır olarak
+düşer.
+Yeni bir çizelge geldiğinde yalnızca `hazir-liste.js` değişir: saatler `"SS:DD"`
+biçiminde yazılır, sıralama dosyadaki sıradır.
+
+## Rapor (📄) ve PDF
+
+Giriş ekranındaki **Rapor** kartından veya Başkan ekranının altındaki
+**Günün raporunu çıkar** düğmesinden açılır. Sırada kimse kalmayıp en az bir
+görüşme bittiğinde bu düğme yeşile döner: *"Görüşmeler bitti — raporu çıkar"*.
+
+Rapor, oturum verisinden ve olay günlüğünden üretilir; şu bölümleri içerir:
+
+- **Özet** — kaç kişi, kaç görüşme, toplam/ortalama süre, toplam bekleme,
+  saatinde giren sayısı, ilk giriş ve son bitiş saati.
+- **Görüşmeler** — her kişi için: planlanan saat, gerçek giriş saati ve
+  **kaç dakika gecikmeli/erken** girdiği, görüşme süresi, başkanın **beklemede
+  bıraktığı** süre, bitiş saati ve notu.
+- **Görüşülemeyenler** — sıra gelmeyen kişiler, saatleri ve notlarıyla.
+- **Değişiklikler ve olaylar** — kim ne zaman ne yaptı: sekreteryanın
+  ad/saat/not düzeltmeleri (eski → yeni), eklemeler, silmeler, sıra
+  değişiklikleri, başkanın görüşmede/beklemede/bitti geçişleri.
+
+Raporun tarihi **görüşmelerin yapıldığı gündür** (ilk görüşmeye giriş anı);
+hiç görüşme yapılmadıysa bugünün tarihi yazılır. Çizelgenin bir gün önce
+girilmiş olması tarihi etkilemez.
+
+### Canlı + düzenlenebilir
+
+Rapor **canlıdır**: sekreterya bir adı, saati veya notu düzeltince rapor da
+anında düzelir (sayılar, kişi satırları, olay listesi yeniden üretilir).
+
+Buna rağmen elle yaptıklarınız korunur. Her madde tek tek **düzenlenebilir**
+(üzerine dokunup yazmak yeterli) ve **🗑 ile silinebilir**; `+ Madde ekle` ile
+kendi maddenizi yazabilirsiniz. Elle yazdığınız maddeler **sarı çizgiyle**
+işaretlenir ve artık veriyle güncellenmez — yazdığınız gibi kalır.
+`🔄 Yeniden oluştur` bütün müdahaleleri geri alır (onay sorar).
+
+Teknik olarak: her otomatik maddenin kararlı bir kimliği vardır
+(`gorusme:<kisiId>`, `olay:<gunlukId>` …). Taslakta metinlerin tamamı değil,
+yalnızca **kullanıcının müdahalesi** saklanır: çıkarılan kimlikler, elle
+yazılmış metinler ve eklenen serbest maddeler. Bu yüzden rapor bayatlamaz.
+
+**Rapordan madde silmek listeden kişi silmez** — rapor kaynak veriye dokunmaz.
+
+### PDF
+
+**📄 PDF olarak indir** tarayıcının yazdırma penceresini açar; hedef olarak
+*"PDF olarak kaydet"* seçilir. Yazdırma çıktısında araç çubuğu, üst bar ve
+silme düğmeleri görünmez; yalnızca rapor metni basılır.
+
+### Olay günlüğü
+
+Rapordaki "Değişiklikler ve olaylar" bölümü `oturum/gunluk` düğümünden gelir;
+her yazma işlemi kendi güncellemesine günlük satırını da ekler (ayrı istek yok).
+Günlük bu sürümde eklendiği için **daha önce yapılmış** işlemler raporda
+görünmez; bundan sonraki tüm değişiklikler kaydedilir.
 
 ## Küçük ayrıntılar
 

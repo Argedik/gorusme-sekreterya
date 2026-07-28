@@ -24,7 +24,22 @@
 
       <div class="giris-butonlar">
         <a class="rol-btn rol-baskan" href="#/baskan">
-          <span class="rol-ikon">👔</span>
+          <span class="rol-ikon">
+            <!-- Başkan ikonu: yeşil başörtülü, koyu ceketli portre (düz çizim) -->
+            <svg class="ikon-baskan" viewBox="0 0 100 100" role="img" aria-label="Başkan">
+              <!-- ceket -->
+              <path d="M13 100V84c0-12 8-21.8 21-25.4L50 70l16-11.4c13 3.6 21 13.4 21 25.4v16z" fill="#1b3026"/>
+              <!-- gömlek (yakaların arasından görünen krem alan) -->
+              <path d="M43 58h14l5 42H38z" fill="#f4efe2"/>
+              <!-- ceket yakaları -->
+              <path d="M34 58.6 50 78l-6.5 22L30 69.5z" fill="#13241c"/>
+              <path d="M66 58.6 50 78l6.5 22L70 69.5z" fill="#13241c"/>
+              <!-- başörtü: kafayı saran örtü + omuzlara yayılıp ortada inen uç -->
+              <path d="M50.5 12C38.7 12 32.5 21.5 32.5 39c0 8 1.5 13.2 4.2 17.3-4.3 2.6-7.6 5.4-8.7 9.2l10 2.6c2.6 8.4 6.4 14.8 12.5 20.4 6.1-5.6 9.9-12 12.5-20.4l10-2.6c-1.1-3.8-4.4-6.6-8.7-9.2 2.7-4.1 4.2-9.3 4.2-17.3 0-17.5-6.2-27-18-27z" fill="#40805f"/>
+              <!-- yüz -->
+              <path d="M50.5 25.5c7.3 0 11.3 5.2 11.3 13.3 0 9.5-4.9 17.2-11.3 17.2s-11.3-7.7-11.3-17.2c0-8.1 4-13.3 11.3-13.3z" fill="#f4efe2"/>
+            </svg>
+          </span>
           <span class="rol-ad">Başkan</span>
           <span class="rol-aciklama">Görüşme durumunu yönet</span>
         </a>
@@ -32,6 +47,11 @@
           <span class="rol-ikon">🗂️</span>
           <span class="rol-ad">Sekreterya</span>
           <span class="rol-aciklama">Sırayı ve listeyi yönet</span>
+        </a>
+        <a class="rol-btn rol-rapor" href="#/rapor">
+          <span class="rol-ikon">📄</span>
+          <span class="rol-ad">Rapor</span>
+          <span class="rol-aciklama">Günün raporunu düzenle, PDF indir</span>
         </a>
       </div>
     </div>
@@ -92,6 +112,12 @@
           <p id="okumaBos" class="tablo-bos">Liste boş.</p>
         </div>
       </div>
+
+      <!-- Günün raporu: görüşmeler bitince buradan çıkarılır -->
+      <a class="rapor-cikis-btn" id="raporCikisBtn" href="#/rapor">
+        <span class="rapor-cikis-ad" id="raporCikisAd">📄 Günün raporunu çıkar</span>
+        <span class="rapor-cikis-alt">Süreler, gecikmeler, notlar ve değişiklikler — düzenle, PDF indir</span>
+      </a>
 
       <!-- Bitti görüşmeler — ayrı, katlanır bir buton; salt okunur -->
       <div class="okuma-kart bitti-sarmal">
@@ -180,6 +206,13 @@
         <button type="submit" class="ekle-btn">+ Ekle</button>
       </form>
 
+      <!-- Hazır çizelge: kişileri elle girmek yerine tek dokunuşla yükle -->
+      <div class="hazir-satir">
+        <button type="button" id="hazirListeBtn" class="hazir-btn">📋 Hazır listeyi yükle</button>
+        <button type="button" id="listeTemizleBtn" class="hazir-btn hazir-btn-sil">🗑 Listeyi temizle</button>
+        <span id="hazirListeAciklama" class="hazir-aciklama"></span>
+      </div>
+
       <!-- Liste tablosu: görüşmede → sıradaki/bekleyen (bitti aşağıda ayrı butonda) -->
       <div class="tablo-sarmal" data-drop="liste">
         <table class="tablo">
@@ -223,6 +256,37 @@
           <p id="bittiBos" class="tablo-bos" hidden>Henüz biten görüşme yok.</p>
         </div>
       </div>
+
+    </section>
+  </main>
+
+  <!-- ============================================================ -->
+  <!--  4) RAPOR EKRANI                                             -->
+  <!-- ============================================================ -->
+  <main id="ekranRapor" class="ekran">
+    <header class="ust-bar rapor-ust">
+      <a class="geri-btn" href="#/" title="Giriş ekranına dön">←</a>
+      <h2 class="ust-baslik">Rapor</h2>
+    </header>
+
+    <section class="rapor-govde">
+
+      <!-- Araç çubuğu (yazdırmada görünmez) -->
+      <div class="rapor-arac">
+        <button type="button" id="raporPdfBtn" class="rapor-btn rapor-btn-ana">📄 PDF olarak indir</button>
+        <button type="button" id="raporMaddeEkleBtn" class="rapor-btn">+ Madde ekle</button>
+        <button type="button" id="raporYenidenBtn" class="rapor-btn">🔄 Yeniden oluştur</button>
+      </div>
+      <p class="rapor-ipucu">
+        Her maddeye dokunup <strong>yazıyı düzenleyebilir</strong>, 🗑 ile o maddeyi
+        <strong>rapordan çıkarabilirsiniz</strong>. Rapor listeyi canlı izler: sekreterya
+        bir adı, saati veya notu düzeltince <strong>burada da anında düzelir</strong>.
+        Elle yazdığınız maddeler (sarı çizgili) buna karışmaz, olduğu gibi kalır.
+        Rapordan madde silmek listeden kişi silmez.
+        <span id="raporBilgi" class="rapor-bilgi"></span>
+      </p>
+
+      <div id="raporMaddeler" class="rapor-maddeler"></div>
 
     </section>
   </main>

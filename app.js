@@ -8,6 +8,9 @@
 // ============================================================
 
 import { firebaseConfig } from "./firebase-config.js";
+import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js";
+import { tamAd, sureBicimle } from "./ortak.js";
+import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js";
 
 /* ============================================================
    1) VERİ KATMANI
@@ -23,6 +26,7 @@ const BOS_OTURUM = {
   siradakiHazir: false,
   aktifKisiId: null,
   kisiler: {},
+  gunluk: {},            // rapor için olay geçmişi: { g1: { t, tip, rol, ... } }
 };
 
 let depo = null;   // { abone, guncelle }
@@ -120,6 +124,7 @@ function baglantiGoster(tip) {
 
 let oturum = { ...BOS_OTURUM };
 let suruklenenId = null;
+let ilkVeriGeldi = false;   // rapor, veri gelmeden üretilmemeli
 
 const KUTU_ADI = { gorusmede: "Görüşmede", siradaki: "Sıradaki" };
 
@@ -132,11 +137,6 @@ function kisiListesi(kutu = null) {
     .map(([id, k]) => ({ id, ...k }))
     .filter((k) => (kutu ? (k.kutu || "liste") === kutu : true))
     .sort((a, b) => (a.sira || 0) - (b.sira || 0));
-}
-
-function tamAd(k) {
-  if (!k) return "—";
-  return [k.ad, k.soyad].filter(Boolean).join(" ") || "(isimsiz)";
 }
 
 function sonrakiSira() {
@@ -166,6 +166,27 @@ function kisiListesiBitti() {
 }
 
 /* ============================================================
+   2b) OLAY GÜNLÜĞÜ
+   Rapor "kim ne zaman ne yaptı"yı buradan okur: sıra değişiklikleri,
+   sekreteryanın düzenlemeleri, başkanın durum geçişleri.
+   Her yazma işlemi, kendi guncelle() çağrısına günlük satırını da ekler
+   (tek atomik yazma; ayrı istek yok).
+   ============================================================ */
+
+let gunlukSayaci = 0;
+
+function cihazRolu() {
+  try { return localStorage.getItem(ROL_ANAHTARI) || "—"; } catch { return "—"; }
+}
+
+function gunlukYollari(tip, veri = {}) {
+  const id = "g" + Date.now().toString(36) + (gunlukSayaci++).toString(36);
+  // Firebase update() undefined kabul etmez — boş alanları hiç yazmıyoruz
+  const temiz = Object.fromEntries(Object.entries(veri).filter(([, d]) => d !== undefined));
+  return { [`gunluk/${id}`]: { t: Date.now(), tip, rol: cihazRolu(), ...temiz } };
+}
+
+/* ============================================================
    3) SÜRE SAYACI
    Kişide birikenMs (durmuş süre) + gorusmeBaslangic (çalışıyorsa).
    Başkan ekranında 10 dakikalık geri sayım gösterilir; görüşme bitince
@@ -186,18 +207,6 @@ function gecenBeklemeMs(k) {
   if (!k) return 0;
   const biriken = k.birikenBeklemeMs || 0;
   return k.beklemeBaslangic ? biriken + (Date.now() - k.beklemeBaslangic) : biriken;
-}
-
-/* Geçen süreyi mm:ss (uzunsa sa:dk:sn) biçiminde yazar — Biten görüşmeler'de kullanılır */
-function sureBicimle(ms) {
-  const sn = Math.max(0, Math.floor(ms / 1000));
-  const dk = Math.floor(sn / 60);
-  const kalan = sn % 60;
-  if (dk >= 60) {
-    const sa = Math.floor(dk / 60);
-    return `${sa}:${String(dk % 60).padStart(2, "0")}:${String(kalan).padStart(2, "0")}`;
-  }
-  return `${String(dk).padStart(2, "0")}:${String(kalan).padStart(2, "0")}`;
 }
 
 /* 10 dakikadan geriye sayar; süre dolunca eksiye geçip "ek süre"yi gösterir */
@@ -276,10 +285,18 @@ setInterval(() => { aktifSureGoster(); canliSureleriGuncelle(); }, 1000);
 
 function ekranAyarla() {
   const yol = location.hash.replace("#/", "") || "";
-  const eslesme = { "": "ekranGiris", baskan: "ekranBaskan", sekreterya: "ekranSekreterya" };
+  const eslesme = {
+    "": "ekranGiris", baskan: "ekranBaskan",
+    sekreterya: "ekranSekreterya", rapor: "ekranRapor",
+  };
   const hedef = eslesme[yol] || "ekranGiris";
   document.querySelectorAll(".ekran").forEach((e) => e.classList.toggle("aktif", e.id === hedef));
+  document.body.classList.toggle("rapor-modu", hedef === "ekranRapor");
   window.scrollTo(0, 0);
+
+  // Rapor ekranı verilerden (veya kaydedilmiş taslaktan) her girişte tazelenir.
+  // Veri henüz gelmediyse beklenir — yoksa boş bir rapor üretilip taslak olarak kaydedilir.
+  if (hedef === "ekranRapor" && ilkVeriGeldi) raporEkraniniYenile();
 
   // Bu cihazın rolünü hatırla: "sıradaki gelebilir" bildirimi yalnızca
   // sekreterya olarak işaretlenmiş cihaza gider.
@@ -462,9 +479,14 @@ async function durumaGec(durum) {
     }
     // Beklemeden dönüyorsa bekleme süresi birikip durur, görüşme süresi devam eder
     Object.assign(yollar, beklemeDurdurYollari(aktifId));
+    const ilkKez = aktifId && !oturum.kisiler?.[aktifId]?.ilkGirisT;
     if (aktifId && !oturum.kisiler?.[aktifId]?.gorusmeBaslangic) {
       yollar[`kisiler/${aktifId}/gorusmeBaslangic`] = Date.now();
     }
+    if (ilkKez) yollar[`kisiler/${aktifId}/ilkGirisT`] = Date.now();
+    Object.assign(yollar, gunlukOlayi(
+      ilkKez ? "gorusmeye-alindi" : "gorusmeye-donuldu", aktifId,
+    ));
     yollar["siradakiHazir"] = false;
   }
 
@@ -473,6 +495,9 @@ async function durumaGec(durum) {
     if (aktifId && !oturum.kisiler?.[aktifId]?.beklemeBaslangic) {
       yollar[`kisiler/${aktifId}/beklemeBaslangic`] = Date.now();
     }
+    Object.assign(yollar, gunlukOlayi("beklemeye-alindi", aktifId, {
+      sureMs: gecenMs(oturum.kisiler?.[aktifId]),
+    }));
     yollar["siradakiHazir"] = false;
   }
 
@@ -482,12 +507,24 @@ async function durumaGec(durum) {
     Object.assign(yollar, beklemeDurdurYollari(aktifId));
     if (aktifId && oturum.kisiler?.[aktifId]) {
       yollar[`kisiler/${aktifId}/kutu`] = "bitti";
+      yollar[`kisiler/${aktifId}/bitisT`] = Date.now();
     }
+    Object.assign(yollar, gunlukOlayi("bitti", aktifId, {
+      sureMs: gecenMs(oturum.kisiler?.[aktifId]),
+      beklemeMs: gecenBeklemeMs(oturum.kisiler?.[aktifId]),
+    }));
     yollar["aktifKisiId"] = null;
     yollar["siradakiHazir"] = true;
   }
 
   await depo.guncelle(yollar);
+}
+
+/* Aktif kişiye bağlı durum olayını günlüğe yazar; kimse yoksa hiç yazmaz */
+function gunlukOlayi(tip, kisiId, veri = {}) {
+  const k = kisiId ? oturum.kisiler?.[kisiId] : null;
+  if (!k) return {};
+  return gunlukYollari(tip, { kisiId, ad: tamAd(k), ...veri });
 }
 
 async function siradakiniAl() {
@@ -505,6 +542,10 @@ async function siradakiniAl() {
     [`kisiler/${aday.id}/gorusmeBaslangic`]: Date.now(),
     [`kisiler/${aday.id}/birikenBeklemeMs`]: 0,
     [`kisiler/${aday.id}/beklemeBaslangic`]: null,
+    ...(aday.ilkGirisT ? {} : { [`kisiler/${aday.id}/ilkGirisT`]: Date.now() }),
+    ...gunlukYollari("gorusmeye-alindi", {
+      kisiId: aday.id, ad: tamAd(aday), cagrildi: true,
+    }),
   });
 }
 
@@ -512,30 +553,112 @@ async function siradakiniAl() {
    6) SEKRETERYA İŞLEMLERİ
    ============================================================ */
 
-async function kisiEkle({ ad, soyad, saat, not }) {
-  const id = "k" + Date.now().toString(36) + Math.floor(Math.random() * 1000).toString(36);
+function yeniKisiId(ek = "") {
+  return "k" + Date.now().toString(36) + ek + Math.floor(Math.random() * 1000).toString(36);
+}
+
+/* Listeye yeni girecek kişinin varsayılan alanları */
+function yeniKisi({ ad, soyad, saat, not }, sira) {
+  return {
+    ad: ad || "",
+    soyad: soyad || "",
+    saat: saat || "",
+    not: not || "",
+    kutu: "liste",
+    sira,
+    birikenMs: 0,
+    gorusmeBaslangic: null,
+    birikenBeklemeMs: 0,
+    beklemeBaslangic: null,
+    ilkGirisT: null,   // ilk kez görüşmeye alındığı an — rapordaki "saatinde girdi mi"
+    bitisT: null,      // görüşmenin bittiği an
+  };
+}
+
+async function kisiEkle(veri) {
+  const id = yeniKisiId();
   await depo.guncelle({
-    [`kisiler/${id}`]: {
-      ad: ad || "",
-      soyad: soyad || "",
-      saat: saat || "",
-      not: not || "",
-      kutu: "liste",
-      sira: sonrakiSira(),
-      birikenMs: 0,
-      gorusmeBaslangic: null,
-      birikenBeklemeMs: 0,
-      beklemeBaslangic: null,
-    },
+    [`kisiler/${id}`]: yeniKisi(veri, sonrakiSira()),
+    ...gunlukYollari("eklendi", { kisiId: id, ad: tamAd(veri), saat: veri.saat || "" }),
   });
 }
 
+/* Çizelgedeki kişiler listede zaten var mı? (yanlışlıkla ikinci kez yüklemeyi önler) */
+function hazirListeEslesmesi() {
+  const mevcut = new Set(
+    kisiListesi().map((k) => `${(k.ad || "").trim().toLowerCase()}|${k.saat || ""}`)
+  );
+  return HAZIR_LISTE.filter(
+    (k) => mevcut.has(`${k.ad.trim().toLowerCase()}|${k.saat}`)
+  ).length;
+}
+
+/* hazir-liste.js'teki çizelgeyi tek yazma işlemiyle listenin sonuna ekler */
+async function hazirListeyiYukle() {
+  const mevcut = kisiListesi().length;
+  const eslesme = hazirListeEslesmesi();
+  const uyari = eslesme
+    ? `Bu çizelgeden ${eslesme} kişi listede ZATEN VAR — çizelge daha önce yüklenmiş görünüyor.\n\n` +
+      `Devam ederseniz ${HAZIR_LISTE.length} kişi bir kez daha eklenir ve kayıtlar ikiye katlanır.\n` +
+      `Temiz başlamak için önce "Listeyi temizle" düğmesini kullanın.\n\nYine de eklensin mi?`
+    : mevcut
+      ? `Listede zaten ${mevcut} kişi var.\n\n` +
+        `"${HAZIR_LISTE_ADI}" çizelgesindeki ${HAZIR_LISTE.length} kişi bunların altına eklenecek. Devam edilsin mi?`
+      : null;
+  if (uyari && !confirm(uyari)) return;
+
+  let sira = sonrakiSira();
+  const yollar = {};
+  HAZIR_LISTE.forEach((kisi, i) => {
+    yollar[`kisiler/${yeniKisiId(i.toString(36))}`] = yeniKisi(kisi, sira++);
+  });
+  Object.assign(yollar, gunlukYollari("hazir-liste", {
+    adet: HAZIR_LISTE.length, listeAdi: HAZIR_LISTE_ADI,
+  }));
+  await depo.guncelle(yollar);
+}
+
+/* Listedeki bütün kayıtları siler — yanlış/çift yüklemeden sonra temiz başlamak için */
+async function listeyiTemizle() {
+  const adet = kisiListesi().length;
+  if (!adet) {
+    alert("Liste zaten boş.");
+    return;
+  }
+  if (!confirm(
+    `Listedeki ${adet} kaydın TAMAMI silinecek (biten görüşmeler dahil).\n\n` +
+    `Bu işlem geri alınamaz. Devam edilsin mi?`
+  )) return;
+
+  await depo.guncelle({
+    kisiler: null,
+    aktifKisiId: null,
+    durum: "bos",
+    siradakiHazir: false,
+    ...gunlukYollari("liste-temizlendi", { adet }),
+  });
+}
+
+const ALAN_ADI = { ad: "Ad", soyad: "Soyad", saat: "Saat", not: "Not" };
+
 async function kisiAlanGuncelle(id, alan, deger) {
-  await depo.guncelle({ [`kisiler/${id}/${alan}`]: deger });
+  const k = oturum.kisiler?.[id];
+  const eski = k?.[alan] || "";
+  const yollar = { [`kisiler/${id}/${alan}`]: deger };
+  if (eski !== deger) {
+    Object.assign(yollar, gunlukYollari("duzenlendi", {
+      kisiId: id, ad: tamAd(k), alan: ALAN_ADI[alan] || alan, eski, yeni: deger,
+    }));
+  }
+  await depo.guncelle(yollar);
 }
 
 async function kisiSil(id) {
-  const yollar = { [`kisiler/${id}`]: null };
+  const k = oturum.kisiler?.[id];
+  const yollar = {
+    [`kisiler/${id}`]: null,
+    ...gunlukYollari("silindi", { kisiId: id, ad: tamAd(k), saat: k?.saat || "" }),
+  };
   if (oturum.aktifKisiId === id) {
     yollar["aktifKisiId"] = null;
     yollar["durum"] = "bos";
@@ -543,12 +666,27 @@ async function kisiSil(id) {
   await depo.guncelle(yollar);
 }
 
+/* Kutu değişiminin günlükteki karşılığı */
+const KUTU_OLAYI = {
+  gorusmede: "gorusmeye-alindi",
+  siradaki: "siraya-alindi",
+  liste: "listeye-alindi",
+  bitti: "bitti",
+};
+
 /* Kişiyi bir kutuya taşı (sürükle-bırak veya "geri al") */
 async function kutuyaTasi(id, kutu) {
   const k = oturum.kisiler?.[id];
   if (!k || (k.kutu || "liste") === kutu) return;
 
   const yollar = { [`kisiler/${id}/kutu`]: kutu };
+  Object.assign(yollar, gunlukYollari(KUTU_OLAYI[kutu] || "tasindi", {
+    kisiId: id, ad: tamAd(k), eskiKutu: k.kutu || "liste",
+    sureMs: kutu === "bitti" ? gecenMs(k) : undefined,
+    beklemeMs: kutu === "bitti" ? gecenBeklemeMs(k) : undefined,
+  }));
+  if (kutu === "gorusmede" && !k.ilkGirisT) yollar[`kisiler/${id}/ilkGirisT`] = Date.now();
+  if (kutu === "bitti") yollar[`kisiler/${id}/bitisT`] = Date.now();
 
   if (kutu === "gorusmede") {
     // "Görüşmede" kutusunda tek kişi durur; önceki listeye döner
@@ -592,6 +730,8 @@ function ciz() {
   cizOkumaTablosu();
   cizOkumaBittiTablosu();
   canliSureleriGuncelle();
+  // Rapor açıkken canlı kalsın: sekreterya bir adı/saati düzeltince rapor da düzelir
+  if (el("ekranRapor").classList.contains("aktif")) raporEkraniniYenile();
 }
 
 /* --- Başkan ekranı --- */
@@ -610,6 +750,15 @@ function cizBaskan() {
   el("beklemedeAciklama").textContent = aktif
     ? `${tamAd(aktif)} çıktı, başkan not alıyor`
     : "Kişi çıktı, başkan notlarını alıyor";
+
+  // Sırada kimse kalmadı ve en az bir görüşme bittiyse: gün bitmiş sayılır,
+  // rapor bağlantısı öne çıkar (asıl iş bu noktada raporu çıkarmak).
+  const bitenSayisi = kisiListesiBitti().length;
+  const gunBitti = bitenSayisi > 0 && kisiListesiAktif().length === 0;
+  el("raporCikisBtn").classList.toggle("hazir", gunBitti);
+  el("raporCikisAd").textContent = gunBitti
+    ? "✅ Görüşmeler bitti — raporu çıkar"
+    : "📄 Günün raporunu çıkar";
 
   const btn = el("siradakiBtn");
   const aday = siradakiKisi();
@@ -1029,11 +1178,23 @@ el("ekleForm").addEventListener("submit", async (e) => {
   await kisiEkle(veri);
 });
 
+el("hazirListeAciklama").textContent =
+  `${HAZIR_LISTE_ADI} — ${HAZIR_LISTE.length} kişi`;
+el("hazirListeBtn").addEventListener("click", async (e) => {
+  e.target.disabled = true;
+  try { await hazirListeyiYukle(); } finally { e.target.disabled = false; }
+});
+el("listeTemizleBtn").addEventListener("click", async (e) => {
+  e.target.disabled = true;
+  try { await listeyiTemizle(); } finally { e.target.disabled = false; }
+});
+
 /* ============================================================
    10) BAŞLAT
    ============================================================ */
 
 (async function baslat() {
+  raporEkraniniKur({ oturumVer: () => oturum });
   ekranAyarla();
   baglantiGoster("bekle");
 
@@ -1044,7 +1205,6 @@ el("ekleForm").addEventListener("submit", async (e) => {
     depo = yerelDepoKur();
   }
 
-  let ilkVeriGeldi = false;
   let oncekiSiradakiHazir = false;
 
   depo.abone((veri) => {
@@ -1067,7 +1227,7 @@ el("ekleForm").addEventListener("submit", async (e) => {
     ilkVeriGeldi = true;
 
     oturum = veri;
-    ciz();
+    ciz();   // rapor ekranı açıksa ciz() içinde o da tazelenir
 
     if (odakBilgi?.id) {
       // Satır ana tabloda veya Bitti tablosunda olabilir — ikisinde de ara
