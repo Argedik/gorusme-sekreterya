@@ -1,6 +1,12 @@
 /* ============================================================
    Görüşme — Başkan & Sekreterya
-   Sade, okunaklı, telefon + masaüstü uyumlu.
+   Sade, okunaklı; telefon + tablet + masaüstü uyumlu.
+
+   Kırılma noktaları:
+     ≤400px   küçük telefon (320px dahil) — sıkı boşluklar
+     ≤820px   telefon + küçük tablet      — tablolar satır-kart olur
+     821px+   tablet + masaüstü           — sabit sütunlu tablo
+     ≤560px yükseklik                     — telefon yatay: giriş ekranı sığar
    ============================================================ */
 
 :root {
@@ -25,6 +31,16 @@
 
 * { box-sizing: border-box; }
 
+/* hidden özniteliği her zaman kazansın — sınıf seçicileri (ör. .canli-sure)
+   display değeri verdiği için boş rozetler görünüyordu. */
+[hidden] { display: none !important; }
+
+html {
+  /* Telefon yatay çevrilince tarayıcı yazıyı kendiliğinden büyütmesin */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -32,10 +48,17 @@ body {
   color: var(--yazi);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  /* Uzun kelime/e-posta gibi kırılmayan metinler taşmasın */
+  overflow-wrap: break-word;
 }
 
+/* font-size 1rem (16px): iOS'ta alana dokununca sayfayı yakınlaştırmaz */
 button, input { font-family: inherit; font-size: 1rem; }
 button { cursor: pointer; }
+input { max-width: 100%; }
+
+/* Klavyeyle gezinenler için görünür odak halkası */
+:focus-visible { outline: 3px solid var(--mavi); outline-offset: 2px; }
 
 /* Ekranlar — sadece aktif olan görünür */
 .ekran { display: none; }
@@ -45,13 +68,17 @@ button { cursor: pointer; }
    Bağlantı durumu (sağ üst)
    ------------------------------------------------------------ */
 .baglanti {
-  position: fixed; bottom: 10px; right: 12px; z-index: 60;
+  position: fixed; z-index: 60;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right: calc(12px + env(safe-area-inset-right));
   display: flex; align-items: center; gap: 6px;
   padding: 5px 10px; border-radius: 999px;
   background: rgba(255,255,255,.92);
   border: 1px solid var(--kenar);
   font-size: .74rem; color: var(--yazi-soluk);
   backdrop-filter: blur(6px);
+  max-width: calc(100vw - 24px);
+  pointer-events: none;  /* altındaki düğmelere dokunmayı engellemesin */
 }
 .baglanti .nokta {
   width: 8px; height: 8px; border-radius: 50%;
@@ -61,16 +88,32 @@ button { cursor: pointer; }
 .baglanti.kopuk   .nokta { background: var(--kirmizi); }
 .baglanti.yerel   .nokta { background: var(--mavi); }
 
+/* Her şey yolundayken içeriğin üstünü kapatmasın: yalnızca küçük bir nokta.
+   Bağlantı koptuğunda veya yerel deneme modundayken (dikkat gerektiren
+   durumlar) yazı da görünür. */
+.baglanti { padding: 6px; }
+.baglanti .metin { display: none; }
+.baglanti.kopuk, .baglanti.yerel { padding: 5px 10px; }
+.baglanti.kopuk .metin, .baglanti.yerel .metin { display: inline; }
+@media (max-width: 400px) {
+  .baglanti { font-size: .7rem; }
+}
+
 /* ------------------------------------------------------------
    1) GİRİŞ EKRANI
    ------------------------------------------------------------ */
 #ekranGiris.aktif {
   min-height: 100vh;
-  display: flex; align-items: center; justify-content: center;
+  min-height: 100dvh;   /* mobil tarayıcı adres çubuğu gizlenince zıplamasın */
+  display: flex; justify-content: center;
+  /* Ortalanmış içerik ekrandan uzun olursa üstü kırpılmasın diye margin:auto */
   padding: 24px;
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
   background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
 }
-.giris-kutu { width: 100%; max-width: 760px; text-align: center; }
+.giris-kutu { width: 100%; max-width: 760px; text-align: center; margin: auto 0; }
 .giris-baslik {
   margin: 0 0 6px; font-size: clamp(2rem, 7vw, 3rem);
   color: #fff; letter-spacing: -.5px;
@@ -102,10 +145,16 @@ button { cursor: pointer; }
 .ust-bar {
   display: flex; align-items: center; gap: 12px;
   padding: 14px 16px;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
   background: var(--lacivert); color: #fff;
   position: sticky; top: 0; z-index: 40;
 }
-.ust-baslik { margin: 0; font-size: 1.1rem; font-weight: 600; flex: 1; }
+.ust-baslik {
+  margin: 0; font-size: 1.1rem; font-weight: 600;
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .geri-btn {
   display: grid; place-items: center;
   width: 34px; height: 34px; border-radius: 10px;
@@ -126,8 +175,10 @@ button { cursor: pointer; }
   display: flex; align-items: center; gap: 7px;
   padding: 6px 12px; border-radius: 999px;
   background: rgba(255,255,255,.12); font-size: .82rem; flex: none;
+  max-width: 55%;
 }
-.rozet-nokta { width: 10px; height: 10px; border-radius: 50%; background: #64748b; }
+.rozet-metin { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rozet-nokta { width: 10px; height: 10px; border-radius: 50%; background: #64748b; flex: none; }
 .rozet.gorusmede .rozet-nokta { background: var(--yesil);   box-shadow: 0 0 0 4px rgba(22,163,74,.25); }
 .rozet.beklemede .rozet-nokta { background: var(--sari);    box-shadow: 0 0 0 4px rgba(234,179,8,.25); }
 .rozet.bitti     .rozet-nokta { background: var(--kirmizi); box-shadow: 0 0 0 4px rgba(220,38,38,.25); }
@@ -136,7 +187,10 @@ button { cursor: pointer; }
    2) BAŞKAN EKRANI
    ------------------------------------------------------------ */
 .baskan-govde {
-  max-width: 620px; margin: 0 auto; padding: 20px 16px 40px;
+  max-width: 620px; margin: 0 auto;
+  padding: 20px 16px 72px;   /* alttaki bağlantı rozetine yer bırak */
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
   display: flex; flex-direction: column; gap: 18px;
 }
 
@@ -154,10 +208,13 @@ button { cursor: pointer; }
   font-size: .74rem; text-transform: uppercase; letter-spacing: .8px;
   color: var(--yazi-soluk); margin-bottom: 6px;
 }
-.aktif-ad { font-size: 1.5rem; font-weight: 700; }
+.aktif-ad {
+  font-size: clamp(1.15rem, 5.4vw, 1.5rem); font-weight: 700;
+  overflow-wrap: anywhere;   /* çok uzun isim kartı taşırmasın */
+}
 .aktif-sure {
   margin-top: 8px;
-  font-size: 2.1rem; font-weight: 700;
+  font-size: clamp(1.7rem, 8vw, 2.1rem); font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--yazi-soluk); letter-spacing: 1px;
 }
@@ -173,8 +230,12 @@ button { cursor: pointer; }
 /* Üç durum butonu */
 .durum-butonlar { display: flex; flex-direction: column; gap: 12px; }
 .durum-btn {
+  position: relative;
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
-  padding: 18px 20px; border-radius: var(--r);
+  /* Sağdaki "✓ aktif" rozeti metnin üstüne binmesin diye sağ boşluk
+     üç düğmede de sabit — seçim değişince kayma olmaz. */
+  padding: 18px 88px 18px 20px;
+  border-radius: var(--r);
   border: 3px solid transparent; color: #fff; text-align: left;
   box-shadow: var(--golge);
   transition: transform .12s ease, filter .12s ease;
@@ -195,10 +256,10 @@ button { cursor: pointer; }
 }
 .durum-btn.secili::after {
   content: "✓ aktif";
-  position: absolute; /* akışı bozmasın diye kart göreli */
+  position: absolute;      /* akışı bozmasın diye kart göreli */
+  top: 12px; right: 16px;
+  font-size: .74rem; font-weight: 700; opacity: .95; white-space: nowrap;
 }
-.durum-btn { position: relative; }
-.durum-btn.secili::after { top: 12px; right: 16px; font-size: .74rem; font-weight: 700; opacity: .95; }
 
 /* Sıradaki gelebilir */
 .siradaki-btn {
@@ -222,7 +283,10 @@ button { cursor: pointer; }
    3) SEKRETERYA EKRANI
    ------------------------------------------------------------ */
 .sekreterya-govde {
-  max-width: 1080px; margin: 0 auto; padding: 18px 16px 48px;
+  max-width: 1080px; margin: 0 auto;
+  padding: 18px 16px 72px;   /* alttaki bağlantı rozetine yer bırak */
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
   display: flex; flex-direction: column; gap: 18px;
 }
 
@@ -267,23 +331,35 @@ button { cursor: pointer; }
 .kutu-icerik.uzerinde { background: #eff6ff; outline: 2px dashed var(--mavi); outline-offset: -6px; }
 .kutu-bos { margin: 0; color: #94a3b8; font-size: .84rem; text-align: center; padding: 18px 0; }
 
-/* Kutu içindeki kişi kartı */
+/* Kutu içindeki kişi kartı
+   Sabit ızgara: 1. satır ad + geri düğmesi, 2. satır saat + canlı süre.
+   Böylece dar ekranda da parçalar rastgele kaymaz. */
 .kisi-kart {
-  display: flex; align-items: center; gap: 10px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 4px 8px;
   padding: 10px 12px; border-radius: 10px;
   background: var(--zemin); border: 1px solid var(--kenar);
   cursor: grab; user-select: none;
 }
 .kisi-kart:active { cursor: grabbing; }
 .kisi-kart.tasiniyor { opacity: .4; }
-.kisi-kart .k-ad { font-weight: 600; flex: 1; }
+.kisi-kart .k-ad {
+  grid-area: 1 / 1 / 2 / 3;
+  font-weight: 600; min-width: 0; overflow-wrap: anywhere;
+}
 .kisi-kart .k-saat {
+  grid-area: 2 / 1 / 3 / 2;
   font-size: .8rem; color: var(--yazi-soluk);
   font-variant-numeric: tabular-nums;
 }
+.kisi-kart .canli-sure { grid-area: 2 / 2 / 3 / 3; margin-left: 0; justify-self: start; }
 .kisi-kart .k-geri {
+  grid-area: 1 / 3 / 2 / 4;
   border: none; background: transparent; color: var(--yazi-soluk);
-  font-size: 1rem; padding: 2px 6px; border-radius: 6px; flex: none;
+  font-size: 1rem; border-radius: 8px;
+  width: 34px; height: 34px;   /* rahat dokunulacak alan */
+  display: grid; place-items: center;
 }
 .kisi-kart .k-geri:hover { background: #e2e8f0; color: var(--yazi); }
 
@@ -327,6 +403,38 @@ button { cursor: pointer; }
 .tablo tbody tr.satir-tasiniyor { opacity: .4; }
 .tablo .s-tut  { width: 34px; }
 .tablo .s-islem { width: 96px; }
+
+/* Tablet + masaüstü: sütun genişlikleri sabit — "Not" sütunu ezilmesin,
+   uzun ad/soyad diğer sütunları daraltmasın. */
+@media (min-width: 821px) {
+  .tablo { table-layout: fixed; }
+  .tablo td, .tablo th { overflow-wrap: anywhere; }
+
+  /* Düzenlenebilir tablolar: ⠿ | Ad | Soyad | Saat | Not | İşlem */
+  .tablo:not(.tablo-okuma) th:nth-child(2) { width: 23%; }
+  .tablo:not(.tablo-okuma) th:nth-child(3) { width: 20%; }
+  .tablo:not(.tablo-okuma) th:nth-child(4) { width: 122px; }
+
+  /* Başkanın okuma tablosu: Ad | Soyad | Saat | Durum | Not */
+  .tablo-okuma th:nth-child(1) { width: 22%; }
+  .tablo-okuma th:nth-child(2) { width: 18%; }
+  .tablo-okuma th:nth-child(3) { width: 76px; }
+  .tablo-okuma th:nth-child(4) { width: 108px; }
+  /* Saat hiçbir zaman "09:0 / 0" diye bölünmesin */
+  .tablo-okuma td:nth-child(3) { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* Biten görüşmeler okuma tablosu: Ad | Soyad | Saat | Not (Durum yok) */
+  .tablo-okuma-bitti th:nth-child(1) { width: 32%; }
+  .tablo-okuma-bitti th:nth-child(2) { width: 20%; }
+  .tablo-okuma-bitti th:nth-child(3) { width: 76px; }
+  .tablo-okuma-bitti th:nth-child(4) { width: auto; }
+}
+
+/* Geniş ekranda başkanın kolonu biraz genişler: liste tablosundaki
+   "Not" sütunu daralıp yazı üst üste binmesin. */
+@media (min-width: 900px) {
+  .baskan-govde { max-width: 820px; }
+}
 
 /* Satır içi düzenlenebilir hücreler */
 .hucre-input {
@@ -449,7 +557,9 @@ button { cursor: pointer; }
   width: 100%; max-width: 420px;
   background: var(--kart); border-radius: var(--r);
   box-shadow: 0 20px 60px rgba(15,23,42,.35);
-  overflow: hidden;
+  overflow: hidden auto;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);   /* alçak ekranda taşmasın */
 }
 .modal-baslik {
   display: flex; align-items: center; justify-content: space-between;
@@ -458,69 +568,144 @@ button { cursor: pointer; }
 }
 .modal-kapat {
   display: grid; place-items: center;
-  width: 30px; height: 30px; border-radius: 8px;
+  width: 34px; height: 34px; border-radius: 8px; flex: none;
   border: none; background: transparent; color: var(--yazi-soluk);
   font-size: 1rem;
 }
 .modal-kapat:hover { background: var(--zemin); color: var(--yazi); }
 
 /* ------------------------------------------------------------
-   Telefon
+   TABLET (821–1040px)
+   Ekleme formu tek satıra sıkışmasın: iki satıra bölünür.
    ------------------------------------------------------------ */
-@media (max-width: 720px) {
+@media (min-width: 821px) and (max-width: 1040px) {
+  .ekle-form { grid-template-columns: 1fr 1fr 150px; }
+  .ekle-form input[name="not"] { grid-column: 1 / 3; }
+  .ekle-btn { grid-column: 3; grid-row: 2; }
+}
+
+/* ------------------------------------------------------------
+   TELEFON + KÜÇÜK TABLET (≤820px)
+   Tablolar satır-kart düzenine geçer, form üç satıra iner.
+   ------------------------------------------------------------ */
+@media (max-width: 820px) {
+  /* Ekleme formu: 1) Ad + Soyad  2) Not  3) Saat + Ekle */
   .ekle-form { grid-template-columns: 1fr 1fr; }
-  .ekle-form input[name="not"] { grid-column: 1 / -1; }
-  .ekle-btn { grid-column: 1 / -1; }
-  .aktif-sure { font-size: 1.9rem; }
-  .durum-btn { padding: 16px; }
+  .ekle-form input[name="not"]  { grid-row: 2; grid-column: 1 / -1; }
+  .ekle-form input[name="saat"] { grid-row: 3; grid-column: 1; }
+  .ekle-btn                     { grid-row: 3; grid-column: 2; }
+
+  .durum-btn { padding: 16px 74px 16px 16px; }
+  .durum-btn .durum-ad { font-size: 1.15rem; }
 
   /* Telefonda tablo yatay kaymasın: her satır bir kart olsun */
-  .tablo-sarmal { overflow-x: visible; }
-  #tabloGovde ~ *, .tablo { min-width: 0; }
+  .tablo-sarmal, .okuma-icerik { overflow-x: visible; }
+  .tablo, .tablo-okuma { min-width: 0; }
   .tablo thead { display: none; }
-  .tablo, .tablo tbody, .tablo tr, .tablo td { display: block; width: auto; }
+  .tablo, .tablo tbody { display: block; width: 100%; }
 
   .tablo tbody tr {
-    position: relative;
-    padding: 12px 12px 12px 38px;
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 6px 8px;
+    padding: 12px;
     border-bottom: 1px solid var(--kenar);
   }
   .tablo tbody tr:last-child { border-bottom: none; }
-  .tablo td { padding: 3px 0; border: none; }
+  .tablo td { display: block; padding: 0; border: none; min-width: 0; }
 
-  /* Sürükleme tutamacı sol kenarda dikey ortalı */
+  /* --- Düzenlenebilir tablolar (ana liste + Biten görüşmeler) --- */
+  #tabloGovde tr, #bittiGovde tr { position: relative; padding-left: 42px; }
+
+  /* Sürükleme tutamacı sol kenarda, satır boyunca dikey ortalı */
   .tablo td.tut {
-    position: absolute; left: 6px; top: 50%; transform: translateY(-50%);
-    width: 26px; padding: 8px 0; font-size: 1.2rem;
+    position: absolute; left: 8px; top: 0; bottom: 0; width: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
   }
 
-  /* Ad ve Soyad yan yana, altında saat/not */
-  .tablo td:nth-child(2), .tablo td:nth-child(3) {
-    display: inline-block; width: calc(50% - 4px); vertical-align: top;
+  /* Ad + Soyad yan yana — üstten hizalı: Ad'ın altındaki rozetler
+     Soyad kutusunu aşağı kaydırmasın. */
+  #tabloGovde td:nth-child(2), #tabloGovde td:nth-child(3),
+  #bittiGovde  td:nth-child(2), #bittiGovde  td:nth-child(3) {
+    flex: 1 1 130px; align-self: flex-start;
   }
-  .tablo td:nth-child(4) { width: 45%; display: inline-block; }
-  /* Düzenlenebilir tablolarda (ana liste + Bitti): Sil düğmesi sağa yaslı */
-  #tabloGovde td:last-child, #bittiGovde td:last-child { text-align: right; margin-top: 4px; }
+  /* Saat ve Sil aynı satırda: Saat solda, Sil sağa yaslı */
+  #tabloGovde td:nth-child(4), #bittiGovde td:nth-child(4) { flex: 0 1 150px; }
+  #tabloGovde td:nth-child(6), #bittiGovde td:nth-child(6) {
+    order: 2; flex: 1 1 auto; display: flex; justify-content: flex-end;
+  }
+  /* Not en altta, tam genişlik */
+  #tabloGovde td:nth-child(5), #bittiGovde td:nth-child(5) { order: 3; flex: 1 1 100%; }
+
   .hucre-input { background: #f8fafc; border-color: var(--kenar); }
 
-  /* Başkanın okuma tablosu da kaymasın */
-  .okuma-icerik { overflow-x: visible; }
-  .tablo-okuma { min-width: 0; }
-  .tablo-okuma thead { display: none; }
+  /* --- Başkanın salt-okunur tabloları --- */
   .tablo-okuma tbody tr { padding: 12px 14px; }
-  .tablo-okuma td { padding: 2px 0; }
+  .tablo-okuma td:empty { display: none; }
+  /* Ad + Soyad kalın, satırın solunda */
   .tablo-okuma td:nth-child(1), .tablo-okuma td:nth-child(2) {
-    display: inline-block; width: auto; font-weight: 600; margin-right: 6px;
+    flex: 0 1 auto; font-weight: 600;
   }
-  .tablo-okuma td:nth-child(3) { display: inline-block; color: var(--yazi-soluk); }
-  .tablo-okuma td:nth-child(5) {           /* Not — alt satırda, soluk */
-    color: var(--yazi-soluk); font-size: .88rem; margin-top: 2px;
+  /* Saat sağa yaslı, yanında durum rozeti */
+  .tablo-okuma td:nth-child(3) {
+    flex: none; margin-left: auto;
+    color: var(--yazi-soluk); font-variant-numeric: tabular-nums;
   }
-  .tablo-okuma td:nth-child(5):empty { display: none; }
-
-  /* Bitti tablosunda Durum sütunu yok: Not, 5. değil 4. hücre */
+  /* Durum ve Not her satırda aynı yerde olsun (kayma olmasın): alt satırlar */
+  .tablo-okuma td:nth-child(n+4) { flex: 1 1 100%; }
+  /* Not — alt satırda, tam genişlik, soluk */
+  .tablo-okuma:not(.tablo-okuma-bitti) td:nth-child(5),
   .tablo-okuma-bitti td:nth-child(4) {
-    display: block; color: var(--yazi-soluk); font-size: .88rem; margin-top: 2px;
+    flex: 1 1 100%; color: var(--yazi-soluk); font-size: .9rem;
   }
-  .tablo-okuma-bitti td:nth-child(4):empty { display: none; }
+}
+
+/* ------------------------------------------------------------
+   KÜÇÜK TELEFON (≤400px) — 320px'lik ekranlarda da sığsın
+   ------------------------------------------------------------ */
+@media (max-width: 400px) {
+  .ust-bar { padding: 12px; gap: 8px; }
+  .ust-baslik { font-size: 1rem; }
+  .aktif-kart { padding: 16px 14px; }
+  .durum-btn { padding: 14px 70px 14px 14px; }
+  .siradaki-btn { padding: 16px 14px; }
+  .baskan-govde, .sekreterya-govde { padding-left: 12px; padding-right: 12px; }
+  .kutu-icerik, .tablo tbody tr { padding: 10px; }
+  #tabloGovde tr, #bittiGovde tr { padding-left: 38px; }
+  .tablo-okuma tbody tr { padding: 10px 12px; }
+  .rol-btn { padding: 26px 18px; }
+}
+
+/* En dar ekranlar (≤340px): "✓ aktif" yazısı yerine sadece ✓ */
+@media (max-width: 340px) {
+  .durum-btn { padding: 14px 42px 14px 14px; }
+  .durum-btn.secili::after { content: "✓"; font-size: .95rem; right: 14px; }
+}
+
+/* ------------------------------------------------------------
+   ALÇAK EKRAN / TELEFON YATAY — giriş ekranı sığsın
+   ------------------------------------------------------------ */
+@media (max-height: 560px) {
+  #ekranGiris.aktif { padding-top: 16px; padding-bottom: 16px; }
+  .giris-baslik { font-size: clamp(1.5rem, 5vw, 2rem); }
+  .giris-alt { margin-bottom: 18px; font-size: .92rem; }
+  .giris-butonlar { gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .rol-btn { padding: 18px 16px; }
+  .rol-ikon { font-size: 2rem; }
+  .rol-ad { font-size: 1.2rem; }
+  .modal-kutu { max-height: calc(100dvh - 32px); overflow-y: auto; }
+}
+
+/* ------------------------------------------------------------
+   Fare yerine dokunmatik: hover efektleri yapışıp kalmasın
+   ------------------------------------------------------------ */
+@media (hover: none) {
+  .rol-btn:hover { transform: none; }
+  .durum-btn:hover { filter: none; }
+}
+
+/* Hareket azaltma tercihi olan kullanıcılar için animasyonları kıs */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important; }
 }
