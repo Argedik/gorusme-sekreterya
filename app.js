@@ -37,8 +37,8 @@ function bosOturum() {
 
 let depo = null;   // { abone, guncelle }
 
-/* Firebase uygulaması bir kez kurulur: hem kimlik kapısı hem veri katmanı
-   aynı örneği kullanır. İki kez initializeApp çağrılırsa SDK hata verir. */
+/* Firebase uygulaması bir kez kurulur; iki kez initializeApp çağrılırsa
+   SDK hata verir. */
 let firebaseUygulamaSozu = null;
 function firebaseUygulamasi() {
   if (!firebaseUygulamaSozu) {
@@ -119,99 +119,6 @@ function yerelDepoKur() {
       kanal?.postMessage("degisti");
     },
   };
-}
-
-/* ------------------------------------------------------------
-   KİMLİK KAPISI
-   Veritabanı kuralları veriyi yalnızca giriş yapmış kullanıcılara açıyor
-   (database.rules.json → "auth != null"). Bu yüzden veri katmanı kurulmadan
-   ÖNCE burada bekleniyor: giriş yapılmadan hiçbir okuma başarılı olamaz.
-   Hesaplar Firebase konsolundan açılır; burada yalnızca giriş yapılır.
-   ------------------------------------------------------------ */
-
-function kimlikHataMetni(kod) {
-  const metinler = {
-    "auth/invalid-credential": "E-posta veya şifre hatalı.",
-    "auth/invalid-login-credentials": "E-posta veya şifre hatalı.",
-    "auth/wrong-password": "E-posta veya şifre hatalı.",
-    "auth/user-not-found": "Bu e-posta ile kayıtlı kullanıcı yok.",
-    "auth/invalid-email": "E-posta adresi geçersiz.",
-    "auth/user-disabled": "Bu kullanıcı devre dışı bırakılmış.",
-    "auth/too-many-requests": "Çok fazla deneme yapıldı. Birkaç dakika bekleyin.",
-    "auth/network-request-failed": "İnternet bağlantısı kurulamadı.",
-    // Konsolda Authentication → Sign-in method → Email/Password açılmamışsa bu gelir
-    "auth/operation-not-allowed":
-      "E-posta/şifre girişi Firebase konsolunda açık değil (Authentication → Sign-in method).",
-    // Authentication projede hiç kurulmamışsa (tek bir sağlayıcı bile açılmamışsa) bu gelir
-    "auth/configuration-not-found":
-      "Firebase konsolunda Authentication henüz açılmamış: " +
-      "Authentication → Get started → Email/Password → Enable.",
-  };
-  return metinler[kod] || `Giriş yapılamadı (${kod || "bilinmeyen hata"}).`;
-}
-
-/* Giriş yapılana kadar bekler; giriş yapılmışsa hemen döner. */
-async function kimlikKapisi() {
-  const app = await firebaseUygulamasi();
-  const mod = await import(
-    "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"
-  );
-  const auth = mod.getAuth(app);
-
-  // Oturum tarayıcıda kalsın: her açılışta yeniden şifre sorulmasın
-  try { await mod.setPersistence(auth, mod.browserLocalPersistence); } catch { /* yoksay */ }
-
-  const kapi = el("kimlikKapi");
-
-  // İlk kimlik durumunu bekle (kayıtlı oturum varsa buradan gelir)
-  let birak = null;
-  const mevcut = await new Promise((coz) => {
-    birak = mod.onAuthStateChanged(auth, (kullanici) => coz(kullanici));
-  });
-  birak?.();
-
-  if (!mevcut) {
-    kapi.hidden = false;
-    el("kimlikEposta").focus();
-    await new Promise((coz) => {
-      el("kimlikForm").addEventListener("submit", async (olay) => {
-        olay.preventDefault();
-        const btn = el("kimlikBtn");
-        const hata = el("kimlikHata");
-        btn.disabled = true;
-        hata.hidden = true;
-        try {
-          await mod.signInWithEmailAndPassword(
-            auth,
-            el("kimlikEposta").value.trim(),
-            el("kimlikSifre").value
-          );
-          el("kimlikSifre").value = "";
-          kapi.hidden = true;
-          coz();
-        } catch (h) {
-          hata.textContent = kimlikHataMetni(h?.code);
-          hata.hidden = false;
-        } finally {
-          btn.disabled = false;
-        }
-      });
-    });
-  } else {
-    kapi.hidden = true;
-  }
-
-  // Çıkış: giriş ekranındaki düğme. Çıkınca sayfa yenilenip kapı tekrar kurulur.
-  const cikis = el("cikisBtn");
-  cikis.hidden = false;
-  cikis.textContent = `Çıkış yap (${auth.currentUser?.email || ""})`;
-  cikis.addEventListener("click", async () => {
-    if (!confirm("Bu cihazda oturumu kapatmak istiyor musunuz?")) return;
-    await mod.signOut(auth);
-    location.reload();
-  });
-
-  return auth;
 }
 
 function baglantiGoster(tip) {
@@ -1474,12 +1381,9 @@ el("yedekOnayBtn").addEventListener("click", async (e) => {
   baglantiGoster("bekle");
 
   try {
-    // Kurallar auth şart koştuğu için giriş, veri katmanından önce gelmeli
-    if (FIREBASE_AYARLI) await kimlikKapisi();
     depo = FIREBASE_AYARLI ? await firebaseDepoKur() : yerelDepoKur();
   } catch (hata) {
     console.error("Firebase bağlantısı kurulamadı, yerel moda geçiliyor:", hata);
-    el("kimlikKapi").hidden = true;
     depo = yerelDepoKur();
   }
 

@@ -1,11 +1,11 @@
 {
-  // Veriye yalnızca Firebase Authentication ile giriş yapmış kullanıcılar erişebilir.
-  // Site adresi ve apiKey herkese açık olduğu için tek gerçek koruma buradaki auth kontrolü.
-  // "oturum" dışındaki her yol varsayılan olarak kapalıdır.
+  // Bilinçli tercih: giriş yok, adresi bilen herkes okuyup yazabilir.
+  // Site tek günlük iç kullanım için; ömrü bitince veritabanı silinecek.
+  // "oturum" dışındaki her yol yine de kapalı.
   "rules": {
     "oturum": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": true,
+      ".write": true
     }
   }
 }

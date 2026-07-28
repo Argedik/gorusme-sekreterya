@@ -6,7 +6,7 @@
   <title>Görüşme — Başkan &amp; Sekreterya</title>
   <!-- ?v= numarası: GitHub Pages'in CDN'i yeni index.html ile eski styles.css'i
        birlikte servis edemesin. styles.css'te düzen değişirse bu sayıyı artır. -->
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤝</text></svg>">
 </head>
 <body>
@@ -59,7 +59,6 @@
         </a>
       </div>
 
-      <button type="button" id="cikisBtn" class="cikis-btn" hidden>Çıkış yap</button>
     </div>
   </main>
 
@@ -336,29 +335,6 @@
 
     </section>
   </main>
-
-  <!-- ============================================================ -->
-  <!--  KİMLİK KAPISI                                               -->
-  <!--  Veritabanı kuralları veriyi yalnızca giriş yapmışlara açıyor.-->
-  <!--  Ekran yönlendirmesinden bağımsız, her şeyin üstünde durur.   -->
-  <!-- ============================================================ -->
-  <div id="kimlikKapi" class="kimlik-kapi" hidden>
-    <form id="kimlikForm" class="kimlik-kutu">
-      <h1 class="kimlik-baslik">Görüşme</h1>
-      <p class="kimlik-alt">Devam etmek için giriş yapın.</p>
-
-      <label class="kimlik-etiket" for="kimlikEposta">E-posta</label>
-      <input id="kimlikEposta" type="email" required autocomplete="username"
-             placeholder="ornek@site.com" spellcheck="false">
-
-      <label class="kimlik-etiket" for="kimlikSifre">Şifre</label>
-      <input id="kimlikSifre" type="password" required autocomplete="current-password"
-             placeholder="••••••••">
-
-      <button id="kimlikBtn" type="submit" class="kimlik-btn">Giriş yap</button>
-      <p id="kimlikHata" class="kimlik-hata" hidden></p>
-    </form>
-  </div>
 
   <script type="module" src="app.js"></script>
 </body>
