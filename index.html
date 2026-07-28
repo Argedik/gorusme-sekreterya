@@ -6,7 +6,7 @@
   <title>Görüşme — Başkan &amp; Sekreterya</title>
   <!-- ?v= numarası: GitHub Pages'in CDN'i yeni index.html ile eski styles.css'i
        birlikte servis edemesin. styles.css'te düzen değişirse bu sayıyı artır. -->
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=9">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤝</text></svg>">
 </head>
 <body>
@@ -104,9 +104,13 @@
         <span id="siradakiKimText" class="siradaki-kim">— görüşme bitince aktifleşir</span>
       </button>
 
-      <!-- Sekreterya listesi — her zaman açık, salt okunur (görüşmede + bekleyenler) -->
+      <!-- Sekreterya listesi — her zaman açık (görüşmede + bekleyenler).
+           Ad/Soyad/Saat/Durum salt okunur; Not sütununu başkan da yazabilir. -->
       <div class="okuma-kart">
-        <div class="okuma-baslik">📋 Sekreterya listesi</div>
+        <div class="okuma-baslik">
+          📋 Sekreterya listesi
+          <small class="okuma-baslik-not">Not sütununa yazabilirsiniz — sekreteryada da anında görünür</small>
+        </div>
         <div class="okuma-icerik">
           <table class="tablo tablo-okuma">
             <thead>
@@ -124,7 +128,8 @@
         <span class="rapor-cikis-alt">Süreler, gecikmeler, notlar ve değişiklikler — düzenle, PDF indir</span>
       </a>
 
-      <!-- Bitti görüşmeler — ayrı, katlanır bir buton; salt okunur -->
+      <!-- Bitti görüşmeler — ayrı, katlanır bir buton; Not burada da yazılabilir
+           (başkan görüşme bittikten sonra da notunu tamamlayabilsin) -->
       <div class="okuma-kart bitti-sarmal">
         <button type="button" id="okumaBittiToggle" class="bitti-baslik-btn" aria-expanded="false">
           <span class="bitti-renk"></span>
@@ -345,6 +350,6 @@
   <!-- ?v= her JS/CSS dosyasında aynı numara. GitHub Pages 10 dakika önbellek
        gönderiyor (cache-control: max-age=600); sürüm etiketi olmadan tarayıcı
        eski kodu servis ediyor. Herhangi bir dosya değişince TÜMÜNDE numarayı artır. -->
-  <script type="module" src="app.js?v=8"></script>
+  <script type="module" src="app.js?v=9"></script>
 </body>
 </html>

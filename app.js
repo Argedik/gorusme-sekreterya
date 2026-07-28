@@ -7,10 +7,10 @@
 //  Firebase ayarlanmamışsa yerel deneme moduna düşer.
 // ============================================================
 
-import { firebaseConfig } from "./firebase-config.js?v=8";
-import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=8";
-import { tamAd, sureBicimle } from "./ortak.js?v=8";
-import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=8";
+import { firebaseConfig } from "./firebase-config.js?v=9";
+import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=9";
+import { tamAd, sureBicimle } from "./ortak.js?v=9";
+import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=9";
 
 /* ============================================================
    1) VERİ KATMANI
@@ -1050,10 +1050,18 @@ function cizBittiTablo() {
   el("bittiTumunuSilSayi").textContent = String(hepsi.length);
 }
 
-/* Ad/Soyad/Saat/[Durum]/Not salt-okunur satırı oluşturur (başkan ekranı) */
+/* Başkanın not alanının placeholder'ı. Odak koruma (depo.abone) hücreyi
+   placeholder'dan bulduğu için sabit tutuluyor. */
+const NOT_YAZ_ETIKETI = "Not ekle…";
+
+/* Ad/Soyad/Saat/[Durum] salt-okunur + Not düzenlenebilir satırı oluşturur (başkan ekranı).
+   Not sütunu bilerek yazılabilir: başkan görüşme sırasında/sonrasında notu kendi
+   telefonundan girsin, sekreteryaya söylemek zorunda kalmasın. */
 function okumaSatirOlustur(k, { durumGoster, sureGoster }) {
   const kutu = k.kutu || "liste";
   const tr = document.createElement("tr");
+  // Karşı taraftan güncelleme gelince yazılmakta olan notun imleci korunabilsin
+  tr.dataset.id = k.id;
 
   const tdAd = document.createElement("td");
   tdAd.textContent = k.ad || "";
@@ -1108,8 +1116,16 @@ function okumaSatirOlustur(k, { durumGoster, sureGoster }) {
     tr.appendChild(tdDurum);
   }
 
+  // Not — başkan da yazabilir; sekreteryadaki alanla aynı kaydı günceller
   const tdNot = document.createElement("td");
-  tdNot.textContent = k.not || "";
+  tdNot.className = "not-hucre";
+  const notInput = document.createElement("input");
+  notInput.className = "hucre-input";
+  notInput.placeholder = NOT_YAZ_ETIKETI;
+  notInput.title = "Not yazın — sekreteryada da anında görünür";
+  notInput.value = k.not || "";
+  notInput.addEventListener("change", () => kisiAlanGuncelle(k.id, "not", notInput.value));
+  tdNot.appendChild(notInput);
   tr.appendChild(tdNot);
 
   return tr;
@@ -1417,6 +1433,9 @@ el("yedekOnayBtn").addEventListener("click", async (e) => {
     const odak = document.activeElement;
     const odakBilgi = odak?.classList?.contains("hucre-input")
       ? {
+          // Aynı kişinin satırı hem sekreterya hem başkan tablosunda var;
+          // hücreyi yalnızca id+placeholder ile ararsak yanlış tabloya düşer.
+          govde: odak.closest("tbody")?.id,
           id: odak.closest("tr")?.dataset.id,
           etiket: odak.placeholder,
           deger: odak.value,
@@ -1433,10 +1452,11 @@ el("yedekOnayBtn").addEventListener("click", async (e) => {
     oturum = veri;
     ciz();   // rapor ekranı açıksa ciz() içinde o da tazelenir
 
-    if (odakBilgi?.id) {
-      // Satır ana tabloda veya Bitti tablosunda olabilir — ikisinde de ara
+    if (odakBilgi?.id && odakBilgi.govde) {
+      // Satır dört tablodan birinde olabilir (sekreterya/bitti, başkan/bitti):
+      // hangisindeyse yalnızca o tabloda ara
       const yeni = document.querySelector(
-        `tr[data-id="${odakBilgi.id}"] .hucre-input[placeholder="${odakBilgi.etiket}"]`
+        `#${odakBilgi.govde} tr[data-id="${odakBilgi.id}"] .hucre-input[placeholder="${odakBilgi.etiket}"]`
       );
       if (yeni) {
         yeni.value = odakBilgi.deger;   // yazılmakta olan metni koru

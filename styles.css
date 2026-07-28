@@ -578,7 +578,7 @@ input { max-width: 100%; }
 .bitti-kapsayici { border-top: 1px solid var(--kenar); }
 
 /* ------------------------------------------------------------
-   Başkanın sayfasındaki salt-okunur liste (her zaman açık)
+   Başkanın sayfasındaki liste (her zaman açık; yalnızca Not yazılabilir)
    ------------------------------------------------------------ */
 .okuma-kart {
   background: var(--kart); border-radius: var(--r);
@@ -588,10 +588,19 @@ input { max-width: 100%; }
   padding: 12px 16px; font-weight: 700; font-size: .96rem;
   border-bottom: 1px solid var(--kenar); background: #f8fafc;
 }
+/* Not sütununun yazılabilir olduğu başlıkta söylenir — kullanıcı input'u
+   fark etmeden salt-okunur sanmasın */
+.okuma-baslik-not {
+  display: block; margin-top: 3px;
+  font-weight: 500; font-size: .8rem; color: var(--yazi-soluk);
+}
 .okuma-icerik { overflow-x: auto; }
 .tablo-okuma { min-width: 460px; }
 .tablo-okuma th { background: #fff; }
 .tablo-okuma td { padding: 11px 14px; }
+/* Not hücresi düzenlenebilir: iç boşluğu input'un kendi padding'i verir,
+   yoksa çift boşluk olup metin diğer sütunlardan aşağı kayar */
+.tablo-okuma td.not-hucre { padding: 4px 6px; }
 
 /* Başkan ekranı — Ayarlar kartı: süre doldu bildirimi aç/kapa */
 .ayar-icerik { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
@@ -882,6 +891,9 @@ input { max-width: 100%; }
   .tablo-okuma-bitti td:nth-child(4) {
     flex: 1 1 100%; color: var(--yazi-soluk); font-size: .9rem;
   }
+  /* Not alanı yazılabilir: kart kenarına hizalı dursun, boşluğu input versin */
+  .tablo-okuma td.not-hucre { padding: 0; }
+  .tablo-okuma td.not-hucre .hucre-input { min-height: 40px; }
 }
 
 /* ------------------------------------------------------------
