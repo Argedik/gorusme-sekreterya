@@ -21,13 +21,19 @@ import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js";
 
 const FIREBASE_AYARLI = !String(firebaseConfig.apiKey || "").startsWith("BURAYA");
 
-const BOS_OTURUM = {
-  durum: "bos",          // gorusmede | beklemede | bitti | bos
-  siradakiHazir: false,
-  aktifKisiId: null,
-  kisiler: {},
-  gunluk: {},            // rapor için olay geçmişi: { g1: { t, tip, rol, ... } }
-};
+/* Her çağrıda YENİ nesneler döndürür. Sabit bir nesne olarak tutulup spread
+   edilirse `kisiler` ve `gunluk` tüm okumalar arasında paylaşılan tek bir nesne
+   olur; ona yazan her işlem şablonu kalıcı olarak kirletir ve "Listeyi temizle"
+   sildiği kayıtları geri getirir. */
+function bosOturum() {
+  return {
+    durum: "bos",          // gorusmede | beklemede | bitti | bos
+    siradakiHazir: false,
+    aktifKisiId: null,
+    kisiler: {},
+    gunluk: {},            // rapor için olay geçmişi: { g1: { t, tip, rol, ... } }
+  };
+}
 
 let depo = null;   // { abone, guncelle }
 
@@ -50,7 +56,7 @@ async function firebaseDepoKur() {
 
   return {
     abone(cb) {
-      onValue(oturumRef, (snap) => cb({ ...BOS_OTURUM, ...(snap.val() || {}) }));
+      onValue(oturumRef, (snap) => cb({ ...bosOturum(), ...(snap.val() || {}) }));
     },
     async guncelle(yollar) {
       await update(oturumRef, yollar);
@@ -66,9 +72,9 @@ function yerelDepoKur() {
 
   const oku = () => {
     try {
-      return { ...BOS_OTURUM, ...(JSON.parse(localStorage.getItem(ANAHTAR)) || {}) };
+      return { ...bosOturum(), ...(JSON.parse(localStorage.getItem(ANAHTAR)) || {}) };
     } catch {
-      return { ...BOS_OTURUM };
+      return bosOturum();
     }
   };
   const yayinla = () => {
@@ -122,7 +128,7 @@ function baglantiGoster(tip) {
    2) DURUM
    ============================================================ */
 
-let oturum = { ...BOS_OTURUM };
+let oturum = bosOturum();
 let suruklenenId = null;
 let ilkVeriGeldi = false;   // rapor, veri gelmeden üretilmemeli
 
@@ -637,6 +643,60 @@ async function listeyiTemizle() {
     siradakiHazir: false,
     ...gunlukYollari("liste-temizlendi", { adet }),
   });
+}
+
+/* ------------------------------------------------------------
+   Yedek al / yedekten yükle
+   Yerel modda veri yalnızca o tarayıcının hafızasında durur; bu yüzden
+   listeyi başka bir cihaza taşımanın (ve Firebase'e geçerken kaybetmemenin)
+   tek yolu metin olarak dışa almak.
+   ------------------------------------------------------------ */
+const YEDEK_SURUM = 1;
+
+function yedekMetniUret() {
+  return JSON.stringify({
+    surum: YEDEK_SURUM,
+    alindi: new Date().toISOString(),
+    oturum: {
+      durum: oturum.durum || "bos",
+      siradakiHazir: !!oturum.siradakiHazir,
+      aktifKisiId: oturum.aktifKisiId ?? null,
+      kisiler: oturum.kisiler || {},
+      gunluk: oturum.gunluk || {},
+    },
+  }, null, 2);
+}
+
+/* Yapıştırılan metni doğrular ve oturumun ÜZERİNE yazar. */
+async function yedektenYukle(metin) {
+  let paket;
+  try {
+    paket = JSON.parse(metin);
+  } catch {
+    return { tamam: false, mesaj: "Metin okunamadı — eksik kopyalanmış olabilir." };
+  }
+
+  const o = paket?.oturum;
+  if (!o || typeof o !== "object" || typeof o.kisiler !== "object" || o.kisiler === null) {
+    return { tamam: false, mesaj: "Bu metin bu siteden alınmış bir yedeğe benzemiyor." };
+  }
+
+  const adet = Object.keys(o.kisiler).length;
+  const mevcut = kisiListesi().length;
+  const onay =
+    `Yedekten ${adet} kayıt yüklenecek.\n\n` +
+    (mevcut ? `Bu cihazdaki ${mevcut} kaydın TAMAMI silinip yerine yedek yazılacak.\n\n` : "") +
+    "Devam edilsin mi?";
+  if (!confirm(onay)) return { tamam: false, mesaj: "İptal edildi." };
+
+  await depo.guncelle({
+    durum: typeof o.durum === "string" ? o.durum : "bos",
+    siradakiHazir: !!o.siradakiHazir,
+    aktifKisiId: o.aktifKisiId ?? null,
+    kisiler: adet ? o.kisiler : null,
+    gunluk: o.gunluk && Object.keys(o.gunluk).length ? o.gunluk : null,
+  });
+  return { tamam: true, mesaj: `${adet} kayıt yüklendi.` };
 }
 
 const ALAN_ADI = { ad: "Ad", soyad: "Soyad", saat: "Saat", not: "Not" };
@@ -1187,6 +1247,62 @@ el("hazirListeBtn").addEventListener("click", async (e) => {
 el("listeTemizleBtn").addEventListener("click", async (e) => {
   e.target.disabled = true;
   try { await listeyiTemizle(); } finally { e.target.disabled = false; }
+});
+
+/* ---- Yedek popup ---- */
+function yedekDurumGoster(mesaj, hataMi) {
+  const d = el("yedekDurum");
+  d.textContent = mesaj || "";
+  d.classList.toggle("hata", !!hataMi);
+  d.hidden = !mesaj;
+}
+
+function yedekModalAc(mod) {
+  const alma = mod === "al";
+  el("yedekBaslik").textContent = alma ? "💾 Yedek al" : "📥 Yedekten yükle";
+  el("yedekAciklama").textContent = alma
+    ? "Aşağıdaki metnin TAMAMINI kopyalayın ve kendinize gönderin (WhatsApp, e-posta, notlar). " +
+      "Diğer cihazda \"Yedekten yükle\" ile aynı listeyi geri açarsınız."
+    : "Aldığınız yedek metnini buraya yapıştırın. Bu cihazdaki mevcut liste silinip yerine bu yedek yazılır.";
+  el("yedekMetin").value = alma ? yedekMetniUret() : "";
+  el("yedekMetin").readOnly = alma;
+  el("yedekKopyalaBtn").hidden = !alma;
+  el("yedekOnayBtn").hidden = alma;
+  yedekDurumGoster("");
+  el("yedekModal").hidden = false;
+  if (alma) el("yedekMetin").select();
+  else el("yedekMetin").focus();
+}
+
+el("yedekAlBtn").addEventListener("click", () => yedekModalAc("al"));
+el("yedekYuklemeBtn").addEventListener("click", () => yedekModalAc("yukle"));
+el("yedekKapatBtn").addEventListener("click", () => { el("yedekModal").hidden = true; });
+el("yedekModal").addEventListener("click", (e) => {
+  if (e.target === el("yedekModal")) el("yedekModal").hidden = true;
+});
+
+el("yedekKopyalaBtn").addEventListener("click", async () => {
+  const alan = el("yedekMetin");
+  alan.select();
+  try {
+    // navigator.clipboard yalnızca https/localhost'ta çalışır; olmazsa eski yola düş
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(alan.value);
+    else if (!document.execCommand("copy")) throw new Error("execCommand reddetti");
+    yedekDurumGoster("Kopyalandı. Şimdi kendinize gönderin.", false);
+  } catch {
+    yedekDurumGoster("Kopyalanamadı — metni elle seçip kopyalayın (metin seçili durumda).", true);
+  }
+});
+
+el("yedekOnayBtn").addEventListener("click", async (e) => {
+  e.target.disabled = true;
+  try {
+    const sonuc = await yedektenYukle(el("yedekMetin").value.trim());
+    yedekDurumGoster(sonuc.mesaj, !sonuc.tamam);
+    if (sonuc.tamam) setTimeout(() => { el("yedekModal").hidden = true; }, 1200);
+  } finally {
+    e.target.disabled = false;
+  }
 });
 
 /* ============================================================

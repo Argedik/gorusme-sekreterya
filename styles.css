@@ -603,6 +603,21 @@ input { max-width: 100%; }
 }
 .modal-kapat:hover { background: var(--zemin); color: var(--yazi); }
 
+/* Yedek popup — listeyi metin olarak alma / geri yükleme */
+.yedek-icerik { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.yedek-aciklama { margin: 0; font-size: .86rem; color: var(--yazi-soluk); line-height: 1.5; }
+.yedek-metin {
+  width: 100%; min-height: 160px; resize: vertical;
+  padding: 10px; border: 1px solid var(--kenar); border-radius: 10px;
+  background: #f8fafc; color: var(--yazi);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .78rem; line-height: 1.45;
+}
+.yedek-metin:focus { outline: 2px solid var(--mavi); outline-offset: -1px; background: #fff; }
+.yedek-butonlar { display: flex; flex-wrap: wrap; gap: 8px; }
+.yedek-durum { margin: 0; font-size: .85rem; font-weight: 600; color: var(--yesil-koyu); }
+.yedek-durum.hata { color: var(--kirmizi); }
+
 /* ------------------------------------------------------------
    4) RAPOR EKRANI
    ------------------------------------------------------------ */
