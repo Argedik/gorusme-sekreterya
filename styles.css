@@ -529,6 +529,14 @@ input { max-width: 100%; }
 
 .tablo-bos { margin: 0; padding: 28px 16px; text-align: center; color: #94a3b8; font-size: .9rem; }
 
+/* Tablo altı işlem şeridi: "Tümünü sil". Başlık satırına konmadı çünkü
+   telefonda thead gizleniyor (satırlar karta dönüşüyor) — orada kaybolurdu. */
+.tablo-alt {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; border-top: 1px solid var(--kenar); background: #f8fafc;
+}
+.tablo-alt .hazir-aciklama { flex: 1 1 220px; }
+
 /* ------------------------------------------------------------
    Bitti görüşmeler — ayrı, katlanır bir bölüm (buton gibi)
    ------------------------------------------------------------ */
@@ -916,6 +924,7 @@ input { max-width: 100%; }
   .siradaki-btn { padding: 16px 14px; }
   .baskan-govde, .sekreterya-govde { padding-left: 12px; padding-right: 12px; }
   .kutu-icerik, .tablo tbody tr { padding: 10px; }
+  .tablo-alt { padding: 10px; }
   #tabloGovde tr, #bittiGovde tr { padding-left: 38px; }
   .tablo-okuma tbody tr { padding: 10px 12px; }
   .rol-btn { padding: 26px 18px; }

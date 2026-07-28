@@ -6,7 +6,7 @@
   <title>Görüşme — Başkan &amp; Sekreterya</title>
   <!-- ?v= numarası: GitHub Pages'in CDN'i yeni index.html ile eski styles.css'i
        birlikte servis edemesin. styles.css'te düzen değişirse bu sayıyı artır. -->
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤝</text></svg>">
 </head>
 <body>
@@ -261,6 +261,14 @@
           <tbody id="tabloGovde"></tbody>
         </table>
         <p id="tabloBos" class="tablo-bos">Henüz kimse eklenmedi. Yukarıdaki formdan kişi ekleyin.</p>
+        <!-- Tablo altı işlem şeridi: tek tek "Sil" yerine bu tablonun tamamı.
+             Başlık satırında değil altta duruyor: telefonda thead gizleniyor. -->
+        <div id="tabloAlt" class="tablo-alt" hidden>
+          <button type="button" id="tumunuSilBtn" class="hazir-btn hazir-btn-sil">🗑 Tümünü sil</button>
+          <span class="hazir-aciklama">
+            Bu tablodaki <strong id="tumunuSilSayi">0</strong> kaydı birden siler — biten görüşmelere dokunmaz.
+          </span>
+        </div>
       </div>
 
       <!-- Bitti görüşmeler — ayrı, katlanır bir buton; kişiyi buraya da sürükleyebilirsiniz -->
@@ -286,6 +294,12 @@
             <tbody id="bittiGovde"></tbody>
           </table>
           <p id="bittiBos" class="tablo-bos" hidden>Henüz biten görüşme yok.</p>
+          <div id="bittiAltIslem" class="tablo-alt" hidden>
+            <button type="button" id="bittiTumunuSilBtn" class="hazir-btn hazir-btn-sil">🗑 Tümünü sil</button>
+            <span class="hazir-aciklama">
+              Yalnızca biten <strong id="bittiTumunuSilSayi">0</strong> görüşmeyi siler — bekleyen liste kalır.
+            </span>
+          </div>
         </div>
       </div>
 

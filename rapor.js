@@ -83,6 +83,10 @@ function olayMetni(g) {
       return bas + `listeden silindi: ${ad}${g.saat ? ` (${g.saat})` : ""}`;
     case "liste-temizlendi":
       return bas + `liste tamamen temizlendi (${g.adet || 0} kayıt silindi)`;
+    case "tablo-temizlendi":
+      return bas + (g.kapsam === "bitti"
+        ? `biten görüşmelerin tamamı silindi (${g.adet || 0} kayıt)`
+        : `bekleyen liste tamamen silindi (${g.adet || 0} kayıt)`);
     case "duzenlendi":
       return bas + `${ad} — ${g.alan} değişti: "${g.eski || "boş"}" → "${g.yeni || "boş"}"`;
     case "gorusmeye-alindi":

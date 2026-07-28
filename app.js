@@ -750,6 +750,43 @@ async function listeyiTemizle() {
   });
 }
 
+/* Bir tablodaki kayıtların TAMAMINI tek yazma işlemiyle siler.
+   "Listeyi temizle"den farkı: yalnızca o tablonun kapsamına dokunur —
+   bekleyenleri silmek biten görüşmeleri, bitenleri silmek bekleyenleri bozmaz.
+   kapsam: "aktif" (görüşmede + sıradaki + bekleyenler) | "bitti" */
+async function tabloTumunuSil(kapsam) {
+  const bittiMi = kapsam === "bitti";
+  const kisiler = bittiMi ? kisiListesiBitti() : kisiListesiAktif();
+  if (!kisiler.length) {
+    alert(bittiMi ? "Biten görüşme yok." : "Tablo zaten boş.");
+    return;
+  }
+  if (!confirm(
+    bittiMi
+      ? `Biten ${kisiler.length} görüşmenin TAMAMI silinecek.\n\n` +
+        `Bekleyen liste olduğu gibi kalır.\n\nBu işlem geri alınamaz. Devam edilsin mi?`
+      : `Bu tablodaki ${kisiler.length} kaydın TAMAMI silinecek ` +
+        `(görüşmede olan ve sıradakiler dahil).\n\n` +
+        `Biten görüşmelere dokunulmaz.\n\nBu işlem geri alınamaz. Devam edilsin mi?`
+  )) return;
+
+  const yollar = {};
+  kisiler.forEach((k) => { yollar[`kisiler/${k.id}`] = null; });
+  // Şu an görüşülen kişi de silindiyse başkan ekranı boşa düşsün
+  if (kisiler.some((k) => k.id === oturum.aktifKisiId)) {
+    yollar["aktifKisiId"] = null;
+    yollar["durum"] = "bos";
+  }
+  // Bekleyenlerin hepsi gittiyse çağrılacak kimse kalmadı
+  if (!bittiMi) yollar["siradakiHazir"] = false;
+
+  Object.assign(yollar, gunlukYollari("tablo-temizlendi", {
+    adet: kisiler.length,
+    kapsam: bittiMi ? "bitti" : "aktif",
+  }));
+  await depo.guncelle(yollar);
+}
+
 /* ------------------------------------------------------------
    Yedek al / yedekten yükle
    Yerel modda veri yalnızca o tarayıcının hafızasında durur; bu yüzden
@@ -1068,6 +1105,9 @@ function cizTablo() {
   govde.innerHTML = "";
   el("tabloBos").style.display = hepsi.length ? "none" : "block";
   hepsi.forEach((k) => govde.appendChild(tabloSatirOlustur(k, { etiketGoster: true, sureGoster: false })));
+  // "Tümünü sil" yalnızca silinecek bir şey varken görünsün
+  el("tabloAlt").hidden = !hepsi.length;
+  el("tumunuSilSayi").textContent = String(hepsi.length);
 }
 
 /* --- Sekreterya: Biten görüşmeler (ayrı, katlanır tablo) --- */
@@ -1078,6 +1118,8 @@ function cizBittiTablo() {
   el("bittiBos").hidden = hepsi.length > 0;
   el("bittiSayac").textContent = String(hepsi.length);
   hepsi.forEach((k) => govde.appendChild(tabloSatirOlustur(k, { etiketGoster: false, sureGoster: true })));
+  el("bittiAltIslem").hidden = !hepsi.length;
+  el("bittiTumunuSilSayi").textContent = String(hepsi.length);
 }
 
 /* Ad/Soyad/Saat/[Durum]/Not salt-okunur satırı oluşturur (başkan ekranı) */
@@ -1353,6 +1395,18 @@ el("listeTemizleBtn").addEventListener("click", async (e) => {
   e.target.disabled = true;
   try { await listeyiTemizle(); } finally { e.target.disabled = false; }
 });
+
+/* Tablo altındaki "Tümünü sil" düğmeleri — her biri yalnızca kendi tablosunu siler.
+   Düğme değişkende tutuluyor: await'ten sonra e.currentTarget null olur. */
+function tumunuSilBagla(dugmeId, kapsam) {
+  const dugme = el(dugmeId);
+  dugme.addEventListener("click", async () => {
+    dugme.disabled = true;
+    try { await tabloTumunuSil(kapsam); } finally { dugme.disabled = false; }
+  });
+}
+tumunuSilBagla("tumunuSilBtn", "aktif");
+tumunuSilBagla("bittiTumunuSilBtn", "bitti");
 
 /* ---- Yedek popup ---- */
 function yedekDurumGoster(mesaj, hataMi) {
