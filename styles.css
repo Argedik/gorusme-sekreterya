@@ -665,6 +665,8 @@ input { max-width: 100%; }
   background: var(--yesil); border-color: var(--yesil); color: #fff; margin-right: auto;
 }
 .rapor-btn-ana:hover { background: var(--yesil-koyu); border-color: var(--yesil-koyu); color: #fff; }
+.rapor-btn:disabled { opacity: .5; cursor: default; }
+.rapor-btn-sil:hover:not(:disabled) { background: #fee2e2; border-color: var(--kirmizi); color: var(--kirmizi); }
 
 .rapor-ipucu {
   margin: 0; padding: 0 4px;

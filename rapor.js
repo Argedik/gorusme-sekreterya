@@ -274,6 +274,30 @@ function maddeSil(id) {
   raporEkraniniYenile();
 }
 
+/* Rapordaki bütün maddeleri çıkarır. Kaynak veriye dokunmaz:
+   listeden kişi silinmez, "🔄 Yeniden oluştur" hepsini geri getirir. */
+function tumMaddeleriSil() {
+  const adet = maddeleriHesapla().liste.length;
+  if (!adet) {
+    alert("Raporda çıkarılacak madde yok.");
+    return;
+  }
+  if (!confirm(
+    `Rapordaki ${adet} maddenin TAMAMI çıkarılacak.\n\n` +
+    `Listeden kişi silinmez; "🔄 Yeniden oluştur" ile hepsi geri gelir.\n\nDevam edilsin mi?`
+  )) return;
+
+  taslak.serbest = [];
+  taslak.eller = {};
+  // Otomatik maddeler veriden yeniden üretildiği için tek tek "silindi" işaretlenir
+  taslak.silinen = [...new Set([
+    ...taslak.silinen,
+    ...otomatikMaddeler(oturumVer()).map((m) => m.id),
+  ])];
+  taslakYaz();
+  raporEkraniniYenile();
+}
+
 /* ============================================================
    5) EKRAN
    ============================================================ */
@@ -292,6 +316,9 @@ function bilgiYaz(cikan = null) {
   if (elle) parcalar.push(`${elle} madde elle yazıldı`);
   if (sonCikan) parcalar.push(`${sonCikan} madde çıkarıldı`);
   bilgi.textContent = parcalar.join(" · ");
+  // Rapor bomboşsa "Tümünü sil" basılacak bir şey bulmaz
+  const tumSil = el("raporTumunuSilBtn");
+  if (tumSil) tumSil.disabled = n === 0;
 }
 
 function maddeOlustur(madde) {
@@ -374,6 +401,8 @@ export function raporEkraniniKur(kancalar) {
     taslakYaz();
     raporEkraniniYenile();
   });
+
+  el("raporTumunuSilBtn").addEventListener("click", tumMaddeleriSil);
 
   el("raporMaddeEkleBtn").addEventListener("click", () => {
     const id = "serbest:" + Date.now().toString(36) + (sayac++).toString(36);

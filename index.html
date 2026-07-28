@@ -6,7 +6,7 @@
   <title>Görüşme — Başkan &amp; Sekreterya</title>
   <!-- ?v= numarası: GitHub Pages'in CDN'i yeni index.html ile eski styles.css'i
        birlikte servis edemesin. styles.css'te düzen değişirse bu sayıyı artır. -->
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤝</text></svg>">
 </head>
 <body>
@@ -211,20 +211,6 @@
         <button type="submit" class="ekle-btn">+ Ekle</button>
       </form>
 
-      <!-- Hazır çizelge: kişileri elle girmek yerine tek dokunuşla yükle -->
-      <div class="hazir-satir">
-        <button type="button" id="hazirListeBtn" class="hazir-btn">📋 Hazır listeyi yükle</button>
-        <button type="button" id="listeTemizleBtn" class="hazir-btn hazir-btn-sil">🗑 Listeyi temizle</button>
-        <span id="hazirListeAciklama" class="hazir-aciklama"></span>
-      </div>
-
-      <!-- Yedek: listeyi metin olarak alıp başka cihaza taşımak / geri yüklemek -->
-      <div class="hazir-satir">
-        <button type="button" id="yedekAlBtn" class="hazir-btn">💾 Yedek al</button>
-        <button type="button" id="yedekYuklemeBtn" class="hazir-btn">📥 Yedekten yükle</button>
-        <span class="hazir-aciklama">Cihaz değiştirirken listeyi kaybetmemek için</span>
-      </div>
-
       <!-- Yedek popup: hem metni gösterir hem yapıştırmayı alır -->
       <div id="yedekModal" class="modal-ortu" hidden>
         <div class="modal-kutu">
@@ -302,6 +288,23 @@
         </div>
       </div>
 
+      <!-- Toplu işlemler en altta: günlük kullanım (ekle → sürükle → sil) üstte
+           kalsın, günde bir kez dokunulan çizelge/yedek düğmeleri araya girmesin. -->
+
+      <!-- Hazır çizelge: kişileri elle girmek yerine tek dokunuşla yükle -->
+      <div class="hazir-satir">
+        <button type="button" id="hazirListeBtn" class="hazir-btn">📋 Hazır listeyi yükle</button>
+        <button type="button" id="listeTemizleBtn" class="hazir-btn hazir-btn-sil">🗑 Listeyi temizle</button>
+        <span id="hazirListeAciklama" class="hazir-aciklama"></span>
+      </div>
+
+      <!-- Yedek: listeyi metin olarak alıp başka cihaza taşımak / geri yüklemek -->
+      <div class="hazir-satir">
+        <button type="button" id="yedekAlBtn" class="hazir-btn">💾 Yedek al</button>
+        <button type="button" id="yedekYuklemeBtn" class="hazir-btn">📥 Yedekten yükle</button>
+        <span class="hazir-aciklama">Cihaz değiştirirken listeyi kaybetmemek için</span>
+      </div>
+
     </section>
   </main>
 
@@ -320,6 +323,7 @@
       <div class="rapor-arac">
         <button type="button" id="raporPdfBtn" class="rapor-btn rapor-btn-ana">📄 PDF olarak indir</button>
         <button type="button" id="raporMaddeEkleBtn" class="rapor-btn">+ Madde ekle</button>
+        <button type="button" id="raporTumunuSilBtn" class="rapor-btn rapor-btn-sil">🗑 Tümünü sil</button>
         <button type="button" id="raporYenidenBtn" class="rapor-btn">🔄 Yeniden oluştur</button>
       </div>
       <p class="rapor-ipucu">
@@ -327,7 +331,8 @@
         <strong>rapordan çıkarabilirsiniz</strong>. Rapor listeyi canlı izler: sekreterya
         bir adı, saati veya notu düzeltince <strong>burada da anında düzelir</strong>.
         Elle yazdığınız maddeler (sarı çizgili) buna karışmaz, olduğu gibi kalır.
-        Rapordan madde silmek listeden kişi silmez.
+        Rapordan madde silmek listeden kişi silmez — <strong>🗑 Tümünü sil</strong> de
+        yalnızca raporu boşaltır, <strong>🔄 Yeniden oluştur</strong> hepsini geri getirir.
         <span id="raporBilgi" class="rapor-bilgi"></span>
       </p>
 
