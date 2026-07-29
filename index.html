@@ -6,7 +6,7 @@
   <title>Görüşme — Başkan &amp; Sekreterya</title>
   <!-- ?v= numarası: GitHub Pages'in CDN'i yeni index.html ile eski styles.css'i
        birlikte servis edemesin. styles.css'te düzen değişirse bu sayıyı artır. -->
-  <link rel="stylesheet" href="styles.css?v=9">
+  <link rel="stylesheet" href="styles.css?v=10">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤝</text></svg>">
 </head>
 <body>
@@ -235,6 +235,11 @@
         </div>
       </div>
 
+      <!-- Grup şeridi: çizelgedeki notlar (ör. "Çarşamba online") grup sayılır.
+           O gün hangi grupla görüşülecekse tek dokunuşla listenin başına alınır.
+           İçerik app.js'te üretilir; birden az grup varsa şerit gizlenir. -->
+      <div id="grupSeridi" class="grup-seridi" hidden></div>
+
       <!-- Liste tablosu: görüşmede → sıradaki/bekleyen (bitti aşağıda ayrı butonda) -->
       <div class="tablo-sarmal" data-drop="liste">
         <table class="tablo">
@@ -332,6 +337,28 @@
         <button type="button" id="raporTumunuSilBtn" class="rapor-btn rapor-btn-sil">🗑 Tümünü sil</button>
         <button type="button" id="raporYenidenBtn" class="rapor-btn">🔄 Yeniden oluştur</button>
       </div>
+
+      <!-- Görünüm anahtarları: aksama olan bir günde süreler raporu yanıltıyor,
+           kapatılınca rapor "kimlerle görüşüldü" özetine iner. Tercih bu cihazda
+           saklanır; sonraki görüşmede tek dokunuşla geri açılır. -->
+      <div class="rapor-gorunum">
+        <span class="rapor-gorunum-baslik">Raporda görünsün:</span>
+        <label class="rapor-anahtar">
+          <input type="checkbox" id="raporSureToggle">
+          <span>
+            <strong>⏱ Süreler ve saatler</strong>
+            <small>Görüşme süresi, giriş/bitiş saati, gecikmeler, toplam ve ortalama</small>
+          </span>
+        </label>
+        <label class="rapor-anahtar">
+          <input type="checkbox" id="raporOlayToggle">
+          <span>
+            <strong>📋 Değişiklikler ve olaylar</strong>
+            <small>Sıra değişiklikleri, düzenlemeler, durum geçişleri — uzun günlük</small>
+          </span>
+        </label>
+      </div>
+
       <p class="rapor-ipucu">
         Her maddeye dokunup <strong>yazıyı düzenleyebilir</strong>, 🗑 ile o maddeyi
         <strong>rapordan çıkarabilirsiniz</strong>. Rapor listeyi canlı izler: sekreterya
@@ -339,6 +366,8 @@
         Elle yazdığınız maddeler (sarı çizgili) buna karışmaz, olduğu gibi kalır.
         Rapordan madde silmek listeden kişi silmez — <strong>🗑 Tümünü sil</strong> de
         yalnızca raporu boşaltır, <strong>🔄 Yeniden oluştur</strong> hepsini geri getirir.
+        Yukarıdaki iki kutu raporun <strong>ayrıntı düzeyini</strong> belirler: kapalıyken
+        rapor yalnızca kimlerle görüşüldüğünü yazar, açınca süreler ve olay günlüğü geri gelir.
         <span id="raporBilgi" class="rapor-bilgi"></span>
       </p>
 
@@ -350,6 +379,6 @@
   <!-- ?v= her JS/CSS dosyasında aynı numara. GitHub Pages 10 dakika önbellek
        gönderiyor (cache-control: max-age=600); sürüm etiketi olmadan tarayıcı
        eski kodu servis ediyor. Herhangi bir dosya değişince TÜMÜNDE numarayı artır. -->
-  <script type="module" src="app.js?v=9"></script>
+  <script type="module" src="app.js?v=10"></script>
 </body>
 </html>

@@ -410,6 +410,39 @@ input { max-width: 100%; }
 .hazir-btn-sil:hover:not(:disabled) { background: #fee2e2; border-color: var(--kirmizi); color: var(--kirmizi); }
 .hazir-aciklama { color: var(--yazi-soluk); font-size: .85rem; }
 
+/* ------------------------------------------------------------
+   Grup şeridi — çizelgedeki not grupları ("Çarşamba online" gibi).
+   O gün görüşülecek grubu listenin başına almak için.
+   ------------------------------------------------------------ */
+.grup-seridi {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--kart); padding: 10px 12px;
+  border-radius: var(--r); box-shadow: var(--golge);
+}
+.grup-seridi[hidden] { display: none; }
+.grup-etiket {
+  flex: 0 0 100%;
+  color: var(--yazi-soluk); font-size: .85rem; font-weight: 600;
+}
+.grup-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border: 1px solid var(--kenar); border-radius: 999px;
+  background: #f8fafc; color: var(--yazi);
+  font-weight: 600; font-size: .88rem;
+}
+.grup-btn:hover:not(:disabled) { background: #eff6ff; border-color: var(--mavi); color: var(--mavi); }
+/* Zaten en üstteki grup: soluk ama okunur — hangisinin başta olduğu görünsün */
+.grup-btn:disabled {
+  background: #f0fdf4; border-color: #bbf7d0; color: var(--yesil-koyu);
+  opacity: 1; cursor: default;
+}
+.grup-btn-sayi {
+  min-width: 20px; padding: 1px 7px; border-radius: 999px;
+  background: rgba(15,23,42,.08); color: var(--yazi-soluk);
+  font-size: .76rem; font-weight: 700; text-align: center;
+}
+.grup-btn:disabled .grup-btn-sayi { background: rgba(22,101,52,.12); color: var(--yesil-koyu); }
+
 /* Tablo */
 .tablo-sarmal {
   background: var(--kart); border-radius: var(--r);
@@ -696,6 +729,24 @@ input { max-width: 100%; }
 .rapor-btn:disabled { opacity: .5; cursor: default; }
 .rapor-btn-sil:hover:not(:disabled) { background: #fee2e2; border-color: var(--kirmizi); color: var(--kirmizi); }
 
+/* Görünüm anahtarları — süreler / olay günlüğü aç-kapa */
+.rapor-gorunum {
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-start;
+  background: var(--kart); padding: 12px; border-radius: var(--r);
+  box-shadow: var(--golge);
+}
+.rapor-gorunum-baslik {
+  flex: 0 0 100%; font-size: .84rem; font-weight: 700; color: var(--yazi-soluk);
+}
+.rapor-anahtar {
+  flex: 1 1 260px; display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+}
+.rapor-anahtar input[type="checkbox"] {
+  margin-top: 2px; width: 18px; height: 18px; flex: none; accent-color: var(--yesil);
+}
+.rapor-anahtar strong { display: block; font-size: .9rem; }
+.rapor-anahtar small { display: block; color: var(--yazi-soluk); font-size: .78rem; margin-top: 2px; }
+
 .rapor-ipucu {
   margin: 0; padding: 0 4px;
   font-size: .84rem; color: var(--yazi-soluk); line-height: 1.5;
@@ -763,7 +814,8 @@ input { max-width: 100%; }
 
   body { background: #fff; }
   /* Araç çubuğu, üst bar, bağlantı rozeti, silme düğmeleri kâğıtta olmasın */
-  .baglanti, .rapor-ust, .rapor-arac, .rapor-ipucu, .rapor-sil { display: none !important; }
+  .baglanti, .rapor-ust, .rapor-arac, .rapor-gorunum,
+  .rapor-ipucu, .rapor-sil { display: none !important; }
 
   .rapor-govde { max-width: none; padding: 0; gap: 0; }
   .rapor-maddeler { box-shadow: none; border-radius: 0; }

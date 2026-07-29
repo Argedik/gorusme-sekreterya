@@ -15,7 +15,7 @@
 //  Kaynak veriye dokunulmaz: raporda madde silmek listeden kişi silmez.
 // ============================================================
 
-import { tamAd, sureYaz, saatYaz, tarihYaz } from "./ortak.js?v=9";
+import { tamAd, sureYaz, saatYaz, tarihYaz } from "./ortak.js?v=10";
 
 const TASLAK_ANAHTARI = "gorusme_rapor_taslak_v2";
 
@@ -24,6 +24,35 @@ let taslak = { silinen: [], eller: {}, serbest: [] };
 let sayac = 0;
 
 const el = (id) => document.getElementById(id);
+
+/* ------------------------------------------------------------
+   Görünüm anahtarları — raporda ne yazacağını belirler.
+
+   sureGoster: süreler, giriş/bitiş saatleri, gecikmeler. Görüşmelerde
+   aksama olan bir günde bunlar raporu yanıltıyor; kapatılınca rapor
+   "kimlerle görüşüldü" özetine iner. Açılınca hepsi geri gelir.
+   VARSAYILAN KAPALI (2026-07-29): başkan böyle istedi.
+
+   olayGoster: "Değişiklikler ve olaylar" bölümü (olay günlüğü).
+
+   Bu cihazda saklanır — taslak gibi kişisel bir görünüm tercihi.
+   ------------------------------------------------------------ */
+const GORUNUM_ANAHTARI = "gorusme_rapor_gorunum_v1";
+
+let gorunum = { sure: false, olay: true };
+
+function gorunumYukle() {
+  try {
+    const veri = JSON.parse(localStorage.getItem(GORUNUM_ANAHTARI));
+    if (veri && typeof veri === "object") {
+      gorunum = { sure: !!veri.sure, olay: veri.olay !== false };
+    }
+  } catch { /* varsayılanla devam */ }
+}
+
+function gorunumYaz() {
+  try { localStorage.setItem(GORUNUM_ANAHTARI, JSON.stringify(gorunum)); } catch { /* yoksay */ }
+}
 
 /* ============================================================
    1) METİN ÜRETİMİ
@@ -50,6 +79,14 @@ function rolYaz(rol) {
 }
 
 function gorusmeMetni(k, sira) {
+  // Süreler kapalıyken madde tek satıra iner: kiminle görüşüldüğü + notu.
+  if (!gorunum.sure) {
+    const parcalar = [`${sira}. ${tamAd(k)}`];
+    if ((k.kutu || "liste") !== "bitti") parcalar.push("görüşme henüz bitmedi");
+    if (k.not) parcalar.push(`not: ${k.not}`);
+    return parcalar.join(" · ");
+  }
+
   const satirlar = [`${sira}. ${tamAd(k)}`];
   satirlar.push(
     `Planlanan saat: ${k.saat || "—"} · Görüşmeye giriş: ${saatYaz(k.ilkGirisT)}` +
@@ -66,9 +103,17 @@ function gorusmeMetni(k, sira) {
 }
 
 function bekleyenMetni(k) {
-  const parcalar = [tamAd(k), k.saat ? `planlanan ${k.saat}` : "saat yok", "görüşülemedi"];
+  const parcalar = [tamAd(k)];
+  // Planlanan saat de bir zaman bilgisi: süreler kapalıyken yazılmaz
+  if (gorunum.sure) parcalar.push(k.saat ? `planlanan ${k.saat}` : "saat yok");
+  parcalar.push("görüşülemedi");
   if (k.not) parcalar.push(`not: ${k.not}`);
   return parcalar.join(" · ");
+}
+
+/* Olay satırındaki süre eki — süreler kapalıyken hiç yazılmaz */
+function olaySureEki(metin) {
+  return gorunum.sure ? metin : "";
 }
 
 function olayMetni(g) {
@@ -94,14 +139,18 @@ function olayMetni(g) {
     case "gorusmeye-donuldu":
       return bas + `${ad} ile görüşmeye devam edildi`;
     case "beklemeye-alindi":
-      return bas + `${ad} beklemeye alındı (o ana kadar görüşme: ${sureYaz(g.sureMs || 0)})`;
+      return bas + `${ad} beklemeye alındı` +
+        olaySureEki(` (o ana kadar görüşme: ${sureYaz(g.sureMs || 0)})`);
     case "siraya-alindi":
       return bas + `${ad} "Sıradaki" kutusuna alındı`;
     case "listeye-alindi":
       return bas + `${ad} listeye geri alındı`;
     case "bitti":
-      return bas + `${ad} ile görüşme bitti — süre ${sureYaz(g.sureMs || 0)}` +
-        (g.beklemeMs ? `, beklemede ${sureYaz(g.beklemeMs)}` : "");
+      return bas + `${ad} ile görüşme bitti` +
+        olaySureEki(` — süre ${sureYaz(g.sureMs || 0)}` +
+          (g.beklemeMs ? `, beklemede ${sureYaz(g.beklemeMs)}` : ""));
+    case "grup-usteye-alindi":
+      return bas + `"${g.grup || "grup"}" listenin başına alındı (${g.adet || 0} kişi)`;
     default:
       return bas + `${g.tip}${ad ? `: ${ad}` : ""}`;
   }
@@ -155,14 +204,17 @@ export function otomatikMaddeler(oturum) {
   const ozet = [
     `Listedeki kayıt sayısı: ${kisiler.length}`,
     `Görüşülen: ${gorusulenler.length} · Tamamlanan: ${bitenler.length} · Görüşülemeyen: ${bekleyenler.length}`,
-    `Toplam görüşme süresi: ${sureYaz(toplamSure)}`,
-    gorusulenler.length
-      ? `Ortalama görüşme süresi: ${sureYaz(toplamSure / gorusulenler.length)}`
-      : null,
-    toplamBekleme ? `Başkanın beklemede bıraktığı toplam süre: ${sureYaz(toplamBekleme)}` : null,
-    gorusulenler.length ? `Saatinde (veya erken) giren: ${zamaninda}/${gorusulenler.length}` : null,
-    gorusulenler.length ? `İlk giriş: ${saatYaz(gorusulenler[0].ilkGirisT)}` : null,
-    bitenler.length ? `Son bitiş: ${saatYaz(Math.max(...bitenler.map((k) => k.bitisT || 0)))}` : null,
+    // Süre/saat satırları yalnızca anahtar açıkken
+    ...(gorunum.sure ? [
+      `Toplam görüşme süresi: ${sureYaz(toplamSure)}`,
+      gorusulenler.length
+        ? `Ortalama görüşme süresi: ${sureYaz(toplamSure / gorusulenler.length)}`
+        : null,
+      toplamBekleme ? `Başkanın beklemede bıraktığı toplam süre: ${sureYaz(toplamBekleme)}` : null,
+      gorusulenler.length ? `Saatinde (veya erken) giren: ${zamaninda}/${gorusulenler.length}` : null,
+      gorusulenler.length ? `İlk giriş: ${saatYaz(gorusulenler[0].ilkGirisT)}` : null,
+      bitenler.length ? `Son bitiş: ${saatYaz(Math.max(...bitenler.map((k) => k.bitisT || 0)))}` : null,
+    ] : []),
   ].filter(Boolean);
   ekle("bolum:ozet", "bolum", "ÖZET");
   ekle("ozet", "ozet", ozet.join("\n"));
@@ -188,11 +240,13 @@ export function otomatikMaddeler(oturum) {
   }
 
   // --- Günlük: sıra değişiklikleri, düzenlemeler, durum geçişleri ---
-  ekle("bolum:olaylar", "bolum", `DEĞİŞİKLİKLER VE OLAYLAR (${gunluk.length})`);
-  if (gunluk.length) {
-    gunluk.forEach((g) => ekle(`olay:${g.id}`, "olay", olayMetni(g)));
-  } else {
-    ekle("olay:yok", "olay", "Bu oturumda kayıtlı olay yok.");
+  if (gorunum.olay) {
+    ekle("bolum:olaylar", "bolum", `DEĞİŞİKLİKLER VE OLAYLAR (${gunluk.length})`);
+    if (gunluk.length) {
+      gunluk.forEach((g) => ekle(`olay:${g.id}`, "olay", olayMetni(g)));
+    } else {
+      ekle("olay:yok", "olay", "Bu oturumda kayıtlı olay yok.");
+    }
   }
 
   return maddeler;
@@ -389,6 +443,19 @@ export function raporEkraniniYenile() {
 export function raporEkraniniKur(kancalar) {
   oturumVer = kancalar.oturumVer;
   taslakYukle();
+  gorunumYukle();
+
+  // Görünüm anahtarları: süreler ve olay günlüğü açık/kapalı
+  [["raporSureToggle", "sure"], ["raporOlayToggle", "olay"]].forEach(([id, alan]) => {
+    const kutu = el(id);
+    if (!kutu) return;
+    kutu.checked = gorunum[alan];
+    kutu.addEventListener("change", () => {
+      gorunum[alan] = kutu.checked;
+      gorunumYaz();
+      raporEkraniniYenile();
+    });
+  });
 
   el("raporYenidenBtn").addEventListener("click", () => {
     const elle = Object.keys(taslak.eller).length + taslak.serbest.length;

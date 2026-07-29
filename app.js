@@ -7,10 +7,10 @@
 //  Firebase ayarlanmamışsa yerel deneme moduna düşer.
 // ============================================================
 
-import { firebaseConfig } from "./firebase-config.js?v=9";
-import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=9";
-import { tamAd, sureBicimle } from "./ortak.js?v=9";
-import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=9";
+import { firebaseConfig } from "./firebase-config.js?v=10";
+import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=10";
+import { tamAd, sureBicimle } from "./ortak.js?v=10";
+import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=10";
 
 /* ============================================================
    1) VERİ KATMANI
@@ -657,6 +657,69 @@ async function listeyiTemizle() {
   });
 }
 
+/* ------------------------------------------------------------
+   Grupları üste alma
+   Çizelgedeki "not" alanı grup adı olarak kullanılıyor ("Toplantı sonrası",
+   "Çarşamba online"…). Görüşme günü hangi grupla çalışılıyorsa o grubun
+   listenin başında olması gerekiyor; tek tek sürüklemek yerine tek dokunuş.
+   ------------------------------------------------------------ */
+
+/* Bitti hariç herkes, SIRA düzeninde (kutu önceliğine göre değil):
+   yeniden numaralandırırken bakılacak gerçek liste düzeni budur. */
+function siraDuzeni() {
+  return kisiListesi().filter((k) => (k.kutu || "liste") !== "bitti");
+}
+
+function grupAnahtari(k) {
+  return (k.not || "").trim();
+}
+
+/* Kaç kişi aynı notu paylaşırsa grup sayılır. Not alanı hem grup etiketi hem
+   kişiye özel not taşıyor (başkan da yazıyor); eşik olmasa şerit tek kişilik
+   düğmelerle dolar. */
+const GRUP_EN_AZ = 2;
+
+/* Listedeki gruplar, ilk göründükleri sırayla: [{ anahtar, ad, adet, ustte }] */
+function gruplar() {
+  const hepsi = siraDuzeni();
+  const bulunan = [];
+  hepsi.forEach((k) => {
+    const anahtar = grupAnahtari(k);
+    const g = bulunan.find((x) => x.anahtar === anahtar);
+    if (g) g.adet++;
+    else bulunan.push({ anahtar, ad: anahtar || "Notu olmayanlar", adet: 1 });
+  });
+  return bulunan
+    .filter((g) => g.adet >= GRUP_EN_AZ)
+    // Grup, listenin ilk "adet" sırasını tek başına doldurmuşsa zaten üstte
+    .map((g) => ({
+      ...g,
+      ustte: hepsi.slice(0, g.adet).every((k) => grupAnahtari(k) === g.anahtar),
+    }));
+}
+
+/* Seçilen grubu listenin başına alır; grup içindeki ve dışındaki sıra korunur. */
+async function grubuUsteAl(anahtar) {
+  const hepsi = siraDuzeni();
+  const secili = hepsi.filter((k) => grupAnahtari(k) === anahtar);
+  if (!secili.length) return;
+  const yeniDuzen = [...secili, ...hepsi.filter((k) => grupAnahtari(k) !== anahtar)];
+
+  // Kullanılan sıra numaraları aynı kalır, yalnızca kimin hangisini aldığı değişir.
+  // Yeni numara üretmiyoruz: biten görüşmelerin sıraları da bozulmasın.
+  const numaralar = hepsi.map((k) => k.sira || 0).sort((a, b) => a - b);
+  const yollar = {};
+  yeniDuzen.forEach((k, i) => {
+    if ((k.sira || 0) !== numaralar[i]) yollar[`kisiler/${k.id}/sira`] = numaralar[i];
+  });
+  if (!Object.keys(yollar).length) return;   // zaten en üstteyse yazma yapma
+
+  Object.assign(yollar, gunlukYollari("grup-usteye-alindi", {
+    grup: anahtar || "Notu olmayanlar", adet: secili.length,
+  }));
+  await depo.guncelle(yollar);
+}
+
 /* Bir tablodaki kayıtların TAMAMINI tek yazma işlemiyle siler.
    "Listeyi temizle"den farkı: yalnızca o tablonun kapsamına dokunur —
    bekleyenleri silmek biten görüşmeleri, bitenleri silmek bekleyenleri bozmaz.
@@ -920,8 +983,48 @@ function cizSekreterya() {
     });
   });
 
+  cizGrupSeridi();
   cizTablo();
   cizBittiTablo();
+}
+
+/* --- Sekreterya: grup şeridi ("Çarşamba online" gibi grupları üste alma) --- */
+function cizGrupSeridi() {
+  const seri = el("grupSeridi");
+  const bulunan = gruplar();
+
+  // Tek grup varsa sıralanacak bir şey yok
+  seri.hidden = bulunan.length < 2;
+  seri.innerHTML = "";
+  if (seri.hidden) return;
+
+  const etiket = document.createElement("span");
+  etiket.className = "grup-etiket";
+  etiket.textContent = "Bugün hangi grupla görüşülecek? Üste al:";
+  seri.appendChild(etiket);
+
+  bulunan.forEach((g) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "grup-btn";
+    btn.disabled = g.ustte;
+    btn.title = btn.disabled
+      ? `"${g.ad}" zaten listenin başında`
+      : `"${g.ad}" grubundaki ${g.adet} kişiyi listenin başına al`;
+
+    const ad = document.createElement("span");
+    ad.className = "grup-btn-ad";
+    ad.textContent = (btn.disabled ? "✓ " : "⬆ ") + g.ad;
+    btn.appendChild(ad);
+
+    const sayi = document.createElement("span");
+    sayi.className = "grup-btn-sayi";
+    sayi.textContent = String(g.adet);
+    btn.appendChild(sayi);
+
+    btn.addEventListener("click", () => grubuUsteAl(g.anahtar));
+    seri.appendChild(btn);
+  });
 }
 
 /* Ad/Soyad/Saat/Not + Sil düzenlenebilir satırı oluşturur (ana tablo + bitti tablosu ortak) */
