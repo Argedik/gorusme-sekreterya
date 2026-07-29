@@ -634,6 +634,17 @@ input { max-width: 100%; }
 /* Not hücresi düzenlenebilir: iç boşluğu input'un kendi padding'i verir,
    yoksa çift boşluk olup metin diğer sütunlardan aşağı kayar */
 .tablo-okuma td.not-hucre { padding: 4px 6px; }
+/* Alan dolu olsa da yazılabildiği görünsün — salt-okunur metne benzemesin */
+.tablo-okuma td.not-hucre .hucre-input { background: #f8fafc; border-color: var(--kenar); }
+/* "Not ekle" düğmesi yalnızca notta zaten yazı varken çıkar */
+.not-ekle-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin: 4px 0 0 2px; padding: 4px 11px;
+  border: 1px dashed var(--mavi); border-radius: 999px;
+  background: #eff6ff; color: var(--mavi);
+  font-size: .74rem; font-weight: 700; white-space: nowrap;
+}
+.not-ekle-btn:hover { background: var(--mavi); border-style: solid; color: #fff; }
 
 /* Başkan ekranı — Ayarlar kartı: süre doldu bildirimi aç/kapa */
 .ayar-icerik { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }

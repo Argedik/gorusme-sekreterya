@@ -7,10 +7,10 @@
 //  Firebase ayarlanmamışsa yerel deneme moduna düşer.
 // ============================================================
 
-import { firebaseConfig } from "./firebase-config.js?v=10";
-import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=10";
-import { tamAd, sureBicimle } from "./ortak.js?v=10";
-import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=10";
+import { firebaseConfig } from "./firebase-config.js?v=11";
+import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=11";
+import { tamAd, sureBicimle } from "./ortak.js?v=11";
+import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=11";
 
 /* ============================================================
    1) VERİ KATMANI
@@ -1229,6 +1229,27 @@ function okumaSatirOlustur(k, { durumGoster, sureGoster }) {
   notInput.value = k.not || "";
   notInput.addEventListener("change", () => kisiAlanGuncelle(k.id, "not", notInput.value));
   tdNot.appendChild(notInput);
+
+  // Notta zaten yazı varsa placeholder görünmez — çizelgeden gelen grup
+  // etiketleri ("Çarşamba online" gibi) alanı hep dolu bırakıyor ve satır
+  // salt-okunur metin gibi duruyor. Yazılabildiği anlaşılsın diye açık düğme:
+  // dokununca imleç mevcut yazının sonuna gider.
+  if ((k.not || "").trim()) {
+    const ekleBtn = document.createElement("button");
+    ekleBtn.type = "button";
+    ekleBtn.className = "not-ekle-btn";
+    // İki ayrı span: emoji ile yazı arasındaki boşluğu CSS gap veriyor,
+    // düz metindeki boşluk emojinin yanında görünmüyor.
+    ekleBtn.innerHTML = "<span>✏️</span><span>Not ekle</span>";
+    ekleBtn.title = "Bu kişinin notuna yazmak için dokunun";
+    ekleBtn.addEventListener("click", () => {
+      notInput.focus();
+      const son = notInput.value.length;
+      try { notInput.setSelectionRange(son, son); } catch { /* yoksay */ }
+    });
+    tdNot.appendChild(ekleBtn);
+  }
+
   tr.appendChild(tdNot);
 
   return tr;

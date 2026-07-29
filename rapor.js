@@ -15,7 +15,7 @@
 //  Kaynak veriye dokunulmaz: raporda madde silmek listeden kişi silmez.
 // ============================================================
 
-import { tamAd, sureYaz, saatYaz, tarihYaz } from "./ortak.js?v=10";
+import { tamAd, sureYaz, saatYaz, tarihYaz } from "./ortak.js?v=11";
 
 const TASLAK_ANAHTARI = "gorusme_rapor_taslak_v2";
 
