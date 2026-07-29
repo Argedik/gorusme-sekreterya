@@ -6,7 +6,7 @@
   <title>Görüşme — Başkan &amp; Sekreterya</title>
   <!-- ?v= numarası: GitHub Pages'in CDN'i yeni index.html ile eski styles.css'i
        birlikte servis edemesin. styles.css'te düzen değişirse bu sayıyı artır. -->
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤝</text></svg>">
 </head>
 <body>
@@ -114,7 +114,7 @@
         <div class="okuma-icerik">
           <table class="tablo tablo-okuma">
             <thead>
-              <tr><th>Ad</th><th>Soyad</th><th>Saat</th><th>Durum</th><th>Not</th></tr>
+              <tr><th>Ad</th><th>Soyad</th><th>Tarih · Saat</th><th>Durum</th><th>Not</th></tr>
             </thead>
             <tbody id="okumaGovde"></tbody>
           </table>
@@ -140,7 +140,7 @@
         <div id="okumaBittiKapsayici" class="bitti-kapsayici" hidden>
           <table class="tablo tablo-okuma tablo-okuma-bitti">
             <thead>
-              <tr><th>Ad</th><th>Soyad</th><th>Saat</th><th>Not</th></tr>
+              <tr><th>Ad</th><th>Soyad</th><th>Tarih · Saat</th><th>Not</th></tr>
             </thead>
             <tbody id="okumaBittiGovde"></tbody>
           </table>
@@ -211,7 +211,8 @@
       <form id="ekleForm" class="ekle-form" autocomplete="off">
         <input type="text" name="ad" placeholder="Ad" required>
         <input type="text" name="soyad" placeholder="Soyad">
-        <input type="time" name="saat" step="600">
+        <input type="date" name="tarih" title="Hangi gün görüşülecek">
+        <input type="time" name="saat" step="600" title="Planlanan saat">
         <input type="text" name="not" placeholder="Not">
         <button type="submit" class="ekle-btn">+ Ekle</button>
       </form>
@@ -248,7 +249,7 @@
               <th class="s-tut"></th>
               <th>Ad</th>
               <th>Soyad</th>
-              <th>Saat</th>
+              <th>Tarih · Saat</th>
               <th>Not</th>
               <th class="s-tasi">Taşı</th>
               <th class="s-islem">İşlem</th>
@@ -282,7 +283,7 @@
                 <th class="s-tut"></th>
                 <th>Ad</th>
                 <th>Soyad</th>
-                <th>Saat</th>
+                <th>Tarih · Saat</th>
                 <th>Not</th>
                 <th class="s-islem">İşlem</th>
               </tr>
@@ -379,6 +380,6 @@
   <!-- ?v= her JS/CSS dosyasında aynı numara. GitHub Pages 10 dakika önbellek
        gönderiyor (cache-control: max-age=600); sürüm etiketi olmadan tarayıcı
        eski kodu servis ediyor. Herhangi bir dosya değişince TÜMÜNDE numarayı artır. -->
-  <script type="module" src="app.js?v=11"></script>
+  <script type="module" src="app.js?v=12"></script>
 </body>
 </html>

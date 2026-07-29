@@ -15,7 +15,7 @@
 //  Kaynak veriye dokunulmaz: raporda madde silmek listeden kişi silmez.
 // ============================================================
 
-import { tamAd, sureYaz, saatYaz, tarihYaz } from "./ortak.js?v=11";
+import { tamAd, sureYaz, saatYaz, tarihYaz, tarihUzunYaz, tarihSaatYaz } from "./ortak.js?v=12";
 
 const TASLAK_ANAHTARI = "gorusme_rapor_taslak_v2";
 
@@ -88,8 +88,9 @@ function gorusmeMetni(k, sira) {
   }
 
   const satirlar = [`${sira}. ${tamAd(k)}`];
+  const planlanan = [tarihUzunYaz(k.tarih), k.saat].filter(Boolean).join(" ") || "—";
   satirlar.push(
-    `Planlanan saat: ${k.saat || "—"} · Görüşmeye giriş: ${saatYaz(k.ilkGirisT)}` +
+    `Planlanan: ${planlanan} · Görüşmeye giriş: ${saatYaz(k.ilkGirisT)}` +
     sapmaYaz(k.saat, k.ilkGirisT)
   );
   satirlar.push(`Görüşme süresi: ${sureYaz(k.birikenMs || 0)}`);
@@ -104,8 +105,11 @@ function gorusmeMetni(k, sira) {
 
 function bekleyenMetni(k) {
   const parcalar = [tamAd(k)];
-  // Planlanan saat de bir zaman bilgisi: süreler kapalıyken yazılmaz
-  if (gorunum.sure) parcalar.push(k.saat ? `planlanan ${k.saat}` : "saat yok");
+  // Hangi güne planlandığı süreler kapalıyken de yazılır: görüşülemeyen kişi
+  // ileri bir güne kayıyor, o gün raporun asıl bilgisi.
+  const planlanan = tarihSaatYaz(k.tarih, gorunum.sure ? k.saat : "");
+  if (planlanan) parcalar.push(`planlanan ${planlanan}`);
+  else if (gorunum.sure) parcalar.push("gün/saat yok");
   parcalar.push("görüşülemedi");
   if (k.not) parcalar.push(`not: ${k.not}`);
   return parcalar.join(" · ");
@@ -151,6 +155,9 @@ function olayMetni(g) {
           (g.beklemeMs ? `, beklemede ${sureYaz(g.beklemeMs)}` : ""));
     case "grup-usteye-alindi":
       return bas + `"${g.grup || "grup"}" listenin başına alındı (${g.adet || 0} kişi)`;
+    case "grup-tarihi":
+      return bas + `"${g.grup || "grup"}" grubunun günü ${tarihUzunYaz(g.tarih) || "boş"} yapıldı ` +
+        `(${g.adet || 0} kişi)`;
     default:
       return bas + `${g.tip}${ad ? `: ${ad}` : ""}`;
   }

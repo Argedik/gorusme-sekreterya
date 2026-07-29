@@ -7,10 +7,10 @@
 //  Firebase ayarlanmamışsa yerel deneme moduna düşer.
 // ============================================================
 
-import { firebaseConfig } from "./firebase-config.js?v=11";
-import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=11";
-import { tamAd, sureBicimle } from "./ortak.js?v=11";
-import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=11";
+import { firebaseConfig } from "./firebase-config.js?v=12";
+import { HAZIR_LISTE, HAZIR_LISTE_ADI } from "./hazir-liste.js?v=12";
+import { tamAd, sureBicimle, tarihKisaYaz, tarihSaatYaz } from "./ortak.js?v=12";
+import { raporEkraniniKur, raporEkraniniYenile } from "./rapor.js?v=12";
 
 /* ============================================================
    1) VERİ KATMANI
@@ -576,10 +576,11 @@ function yeniKisiId(ek = "") {
 }
 
 /* Listeye yeni girecek kişinin varsayılan alanları */
-function yeniKisi({ ad, soyad, saat, not }, sira) {
+function yeniKisi({ ad, soyad, tarih, saat, not }, sira) {
   return {
     ad: ad || "",
     soyad: soyad || "",
+    tarih: tarih || "",   // "YYYY-MM-DD" — hangi gün görüşülecek
     saat: saat || "",
     not: not || "",
     kutu: "liste",
@@ -597,7 +598,10 @@ async function kisiEkle(veri) {
   const id = yeniKisiId();
   await depo.guncelle({
     [`kisiler/${id}`]: yeniKisi(veri, sonrakiSira()),
-    ...gunlukYollari("eklendi", { kisiId: id, ad: tamAd(veri), saat: veri.saat || "" }),
+    ...gunlukYollari("eklendi", {
+      kisiId: id, ad: tamAd(veri),
+      saat: tarihSaatYaz(veri.tarih, veri.saat),
+    }),
   });
 }
 
@@ -679,23 +683,49 @@ function grupAnahtari(k) {
    düğmelerle dolar. */
 const GRUP_EN_AZ = 2;
 
-/* Listedeki gruplar, ilk göründükleri sırayla: [{ anahtar, ad, adet, ustte }] */
+/* Listedeki gruplar, ilk göründükleri sırayla:
+   [{ anahtar, ad, adet, ustte, tarih }] — tarih yalnızca grubun TAMAMI aynı
+   günü taşıyorsa dolu gelir, karışıksa boş (yanlış gün göstermeyelim). */
 function gruplar() {
   const hepsi = siraDuzeni();
   const bulunan = [];
   hepsi.forEach((k) => {
     const anahtar = grupAnahtari(k);
     const g = bulunan.find((x) => x.anahtar === anahtar);
-    if (g) g.adet++;
-    else bulunan.push({ anahtar, ad: anahtar || "Notu olmayanlar", adet: 1 });
+    if (g) { g.adet++; g.tarihler.add(k.tarih || ""); }
+    else bulunan.push({
+      anahtar, ad: anahtar || "Notu olmayanlar", adet: 1,
+      tarihler: new Set([k.tarih || ""]),
+    });
   });
   return bulunan
     .filter((g) => g.adet >= GRUP_EN_AZ)
-    // Grup, listenin ilk "adet" sırasını tek başına doldurmuşsa zaten üstte
     .map((g) => ({
-      ...g,
+      anahtar: g.anahtar,
+      ad: g.ad,
+      adet: g.adet,
+      // Grup, listenin ilk "adet" sırasını tek başına doldurmuşsa zaten üstte
       ustte: hepsi.slice(0, g.adet).every((k) => grupAnahtari(k) === g.anahtar),
+      tarih: g.tarihler.size === 1 ? [...g.tarihler][0] : "",
+      tarihKarisik: g.tarihler.size > 1,
     }));
+}
+
+/* Grubun tamamına aynı günü yazar — 12 kişiye tek tek tarih girmemek için */
+async function grubaTarihAta(anahtar, tarih) {
+  const secili = siraDuzeni().filter((k) => grupAnahtari(k) === anahtar);
+  const yollar = {};
+  secili.forEach((k) => {
+    if ((k.tarih || "") !== tarih) yollar[`kisiler/${k.id}/tarih`] = tarih;
+  });
+  if (!Object.keys(yollar).length) return;
+
+  Object.assign(yollar, gunlukYollari("grup-tarihi", {
+    grup: anahtar || "Notu olmayanlar",
+    adet: Object.keys(yollar).length,
+    tarih,
+  }));
+  await depo.guncelle(yollar);
 }
 
 /* Seçilen grubu listenin başına alır; grup içindeki ve dışındaki sıra korunur. */
@@ -811,7 +841,7 @@ async function yedektenYukle(metin) {
   return { tamam: true, mesaj: `${adet} kayıt yüklendi.` };
 }
 
-const ALAN_ADI = { ad: "Ad", soyad: "Soyad", saat: "Saat", not: "Not" };
+const ALAN_ADI = { ad: "Ad", soyad: "Soyad", tarih: "Tarih", saat: "Saat", not: "Not" };
 
 async function kisiAlanGuncelle(id, alan, deger) {
   const k = oturum.kisiler?.[id];
@@ -829,7 +859,9 @@ async function kisiSil(id) {
   const k = oturum.kisiler?.[id];
   const yollar = {
     [`kisiler/${id}`]: null,
-    ...gunlukYollari("silindi", { kisiId: id, ad: tamAd(k), saat: k?.saat || "" }),
+    ...gunlukYollari("silindi", {
+      kisiId: id, ad: tamAd(k), saat: tarihSaatYaz(k?.tarih, k?.saat),
+    }),
   };
   if (oturum.aktifKisiId === id) {
     yollar["aktifKisiId"] = null;
@@ -938,7 +970,8 @@ function cizBaskan() {
   el("siradakiKimText").textContent = !oturum.siradakiHazir
     ? "— görüşme bitince aktifleşir"
     : aday
-      ? `Sıradaki: ${tamAd(aday)}${aday.saat ? " · " + aday.saat : ""}`
+      ? `Sıradaki: ${tamAd(aday)}` +
+        (tarihSaatYaz(aday.tarih, aday.saat) ? " · " + tarihSaatYaz(aday.tarih, aday.saat) : "")
       : "Sırada bekleyen kimse yok";
 }
 
@@ -973,7 +1006,7 @@ function cizSekreterya() {
         <span class="canli-sure" data-canli-sure-id="${k.id}" hidden></span>
         <button class="k-geri" title="Listeye geri al">↩</button>`;
       kart.querySelector(".k-ad").textContent = tamAd(k);
-      kart.querySelector(".k-saat").textContent = k.saat || "";
+      kart.querySelector(".k-saat").textContent = tarihSaatYaz(k.tarih, k.saat);
       kart.querySelector(".k-geri").addEventListener("click", (e) => {
         e.stopPropagation();
         kutuyaTasi(k.id, "liste");
@@ -1000,30 +1033,46 @@ function cizGrupSeridi() {
 
   const etiket = document.createElement("span");
   etiket.className = "grup-etiket";
-  etiket.textContent = "Bugün hangi grupla görüşülecek? Üste al:";
+  etiket.textContent = "Gruplar — tarihi buradan tek seferde ver, görüşülecek grubu üste al:";
   seri.appendChild(etiket);
 
   bulunan.forEach((g) => {
+    const kutu = document.createElement("div");
+    kutu.className = "grup-kutu" + (g.ustte ? " grup-kutu-ustte" : "");
+
+    const ad = document.createElement("span");
+    ad.className = "grup-kutu-ad";
+    ad.textContent = g.ad;
+    const sayi = document.createElement("span");
+    sayi.className = "grup-btn-sayi";
+    sayi.textContent = String(g.adet);
+    ad.appendChild(sayi);
+    kutu.appendChild(ad);
+
+    // Grubun günü — değiştirince grubun TAMAMINA yazılır
+    const tarihInp = document.createElement("input");
+    tarihInp.type = "date";
+    tarihInp.className = "grup-tarih";
+    tarihInp.value = g.tarih;
+    tarihInp.title = g.tarihKarisik
+      ? `"${g.ad}" grubunda farklı günler var — buraya gün yazarsan ${g.adet} kişinin tamamına uygulanır`
+      : `"${g.ad}" grubundaki ${g.adet} kişinin tamamına gün ver`;
+    if (g.tarihKarisik) tarihInp.classList.add("grup-tarih-karisik");
+    tarihInp.addEventListener("change", () => grubaTarihAta(g.anahtar, tarihInp.value));
+    kutu.appendChild(tarihInp);
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "grup-btn";
     btn.disabled = g.ustte;
-    btn.title = btn.disabled
+    btn.textContent = g.ustte ? "✓ üstte" : "⬆ Üste al";
+    btn.title = g.ustte
       ? `"${g.ad}" zaten listenin başında`
       : `"${g.ad}" grubundaki ${g.adet} kişiyi listenin başına al`;
-
-    const ad = document.createElement("span");
-    ad.className = "grup-btn-ad";
-    ad.textContent = (btn.disabled ? "✓ " : "⬆ ") + g.ad;
-    btn.appendChild(ad);
-
-    const sayi = document.createElement("span");
-    sayi.className = "grup-btn-sayi";
-    sayi.textContent = String(g.adet);
-    btn.appendChild(sayi);
-
     btn.addEventListener("click", () => grubuUsteAl(g.anahtar));
-    seri.appendChild(btn);
+    kutu.appendChild(btn);
+
+    seri.appendChild(kutu);
   });
 }
 
@@ -1040,16 +1089,32 @@ function tabloSatirOlustur(k, { etiketGoster, sureGoster }) {
   tdTut.title = "Yukarıdaki kutulara sürükleyin";
   tr.appendChild(tdTut);
 
-  [["ad", "Ad"], ["soyad", "Soyad"], ["saat", "Saat"], ["not", "Not"]].forEach(([alan, ph]) => {
+  // "zaman" hücresi tek sütun ama iki alan taşır: tarih (üstte) + saat (altta).
+  // Liste birden fazla günü karıştırıyor; saat tek başına hangi gün olduğunu söylemiyor.
+  [["ad", "Ad"], ["soyad", "Soyad"], ["zaman", "Saat"], ["not", "Not"]].forEach(([alan, ph]) => {
     const td = document.createElement("td");
+
+    if (alan === "zaman") {
+      td.className = "zaman-hucre";
+      [["tarih", "date"], ["saat", "time"]].forEach(([kolon, tip]) => {
+        const zInp = document.createElement("input");
+        zInp.className = "hucre-input hucre-" + kolon;
+        zInp.dataset.alan = kolon;
+        zInp.type = tip;
+        if (kolon === "saat") zInp.step = "600";
+        zInp.title = kolon === "tarih" ? "Hangi gün görüşülecek" : "Planlanan saat";
+        zInp.value = k[kolon] || "";
+        zInp.addEventListener("change", () => kisiAlanGuncelle(k.id, kolon, zInp.value));
+        td.appendChild(zInp);
+      });
+      tr.appendChild(td);
+      return;
+    }
+
     const inp = document.createElement("input");
     inp.className = "hucre-input";
-    if (alan === "saat") {
-      inp.type = "time";
-      inp.step = "600";
-    } else {
-      inp.placeholder = ph;
-    }
+    inp.dataset.alan = alan;
+    inp.placeholder = ph;
     inp.value = k[alan] || "";
     inp.addEventListener("change", () => kisiAlanGuncelle(k.id, alan, inp.value));
     td.appendChild(inp);
@@ -1192,11 +1257,22 @@ function okumaSatirOlustur(k, { durumGoster, sureGoster }) {
   tdAd.appendChild(canliSpan);
   tr.appendChild(tdAd);
 
-  [k.soyad || "", k.saat || ""].forEach((deger) => {
-    const td = document.createElement("td");
-    td.textContent = deger;
-    tr.appendChild(td);
-  });
+  const tdSoyad = document.createElement("td");
+  tdSoyad.textContent = k.soyad || "";
+  tr.appendChild(tdSoyad);
+
+  // Tarih + saat aynı hücrede, alt alta: liste birden fazla günü karıştırıyor
+  const tdZaman = document.createElement("td");
+  tdZaman.className = "zaman-hucre-okuma";
+  const tarihEt = document.createElement("span");
+  tarihEt.className = "okuma-tarih";
+  tarihEt.textContent = tarihKisaYaz(k.tarih);
+  if (tarihEt.textContent) tdZaman.appendChild(tarihEt);
+  const saatEt = document.createElement("span");
+  saatEt.className = "okuma-saat";
+  saatEt.textContent = k.saat || "";
+  tdZaman.appendChild(saatEt);
+  tr.appendChild(tdZaman);
 
   if (durumGoster) {
     // Durum — telefonda da görünsün diye Not'tan önce
@@ -1445,6 +1521,7 @@ el("ekleForm").addEventListener("submit", async (e) => {
   const veri = {
     ad: f.ad.value.trim(),
     soyad: f.soyad.value.trim(),
+    tarih: f.tarih.value.trim(),
     saat: f.saat.value.trim(),
     not: f.not.value.trim(),
   };
@@ -1561,9 +1638,12 @@ el("yedekOnayBtn").addEventListener("click", async (e) => {
           // hücreyi yalnızca id+placeholder ile ararsak yanlış tabloya düşer.
           govde: odak.closest("tbody")?.id,
           id: odak.closest("tr")?.dataset.id,
-          etiket: odak.placeholder,
+          // Hücreyi data-alan ile arıyoruz: tarih/saat girdilerinin placeholder'ı
+          // yok, ikisi de placeholder="" ile eşleşip yanlış kutuya odaklanırdı.
+          alan: odak.dataset.alan,
           deger: odak.value,
-          yer: odak.selectionStart,
+          // type=date/time'da selectionStart okumak hata verir
+          yer: (() => { try { return odak.selectionStart; } catch { return null; } })(),
         }
       : null;
 
@@ -1576,16 +1656,18 @@ el("yedekOnayBtn").addEventListener("click", async (e) => {
     oturum = veri;
     ciz();   // rapor ekranı açıksa ciz() içinde o da tazelenir
 
-    if (odakBilgi?.id && odakBilgi.govde) {
+    if (odakBilgi?.id && odakBilgi.govde && odakBilgi.alan) {
       // Satır dört tablodan birinde olabilir (sekreterya/bitti, başkan/bitti):
       // hangisindeyse yalnızca o tabloda ara
       const yeni = document.querySelector(
-        `#${odakBilgi.govde} tr[data-id="${odakBilgi.id}"] .hucre-input[placeholder="${odakBilgi.etiket}"]`
+        `#${odakBilgi.govde} tr[data-id="${odakBilgi.id}"] .hucre-input[data-alan="${odakBilgi.alan}"]`
       );
       if (yeni) {
         yeni.value = odakBilgi.deger;   // yazılmakta olan metni koru
         yeni.focus();
-        try { yeni.setSelectionRange(odakBilgi.yer, odakBilgi.yer); } catch { /* yoksay */ }
+        if (odakBilgi.yer !== null) {
+          try { yeni.setSelectionRange(odakBilgi.yer, odakBilgi.yer); } catch { /* yoksay */ }
+        }
       }
     }
 
